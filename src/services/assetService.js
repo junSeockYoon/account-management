@@ -42,6 +42,8 @@ const NOTICES = {
 
 const ERRORS = {
   invalid: '입력값을 다시 확인해 주세요.',
+  'card-digits': '카드 끝 네 자리는 숫자 4개로 입력해 주세요.',
+  'card-account': '체크카드는 연결할 입출금 계좌를 골라 주세요.',
   notfound: '항목을 찾지 못했습니다.',
   'account-in-use': '연결된 거래, 적금 자동이체, 체크카드가 있어 삭제할 수 없습니다.',
   'asset-in-use': '연결된 거래가 있어 삭제할 수 없습니다.',
@@ -193,11 +195,11 @@ function parseCard(body) {
   const performanceThreshold = form.integerAmount(body.performanceThreshold);
   const paymentDay = form.dayOfMonth(body.paymentDay, { required: false });
   if (!issuer || !name || !type || lastFour == null || performanceThreshold == null || paymentDay == null) return null;
-  if (!/^\d{4}$/.test(lastFour || '')) return null;
+  if (!/^\d{4}$/.test(lastFour || '')) return { error: 'card-digits' };
 
   if (type === 'debit') {
     const linkedAccountId = String(body.linkedAccountId ?? '').trim();
-    if (!accountRepository.findById(linkedAccountId)) return null;
+    if (!accountRepository.findById(linkedAccountId)) return { error: 'card-account' };
     return {
       issuer,
       name,
@@ -210,7 +212,9 @@ function parseCard(body) {
     };
   }
 
-  const unpaidAmount = form.integerAmount(body.unpaidAmount);
+  const unpaidAmount = String(body.unpaidAmount ?? '').trim()
+    ? form.integerAmount(body.unpaidAmount)
+    : 0;
   if (unpaidAmount == null) return null;
   return {
     issuer,
@@ -362,7 +366,7 @@ async function deleteStock(id) {
 
 async function createCard(body) {
   const parsed = parseCard(body);
-  if (!parsed) return { ok: false, error: 'invalid' };
+  if (!parsed || parsed.error) return { ok: false, error: parsed && parsed.error ? parsed.error : 'invalid' };
   const saved = await persist(() => saveNew(cardRepository, parsed));
   if (!saved.ok) return saved;
   return { ok: true, notice: 'created' };
@@ -370,7 +374,7 @@ async function createCard(body) {
 
 async function updateCard(id, body) {
   const parsed = parseCard(body);
-  if (!parsed) return { ok: false, error: 'invalid' };
+  if (!parsed || parsed.error) return { ok: false, error: parsed && parsed.error ? parsed.error : 'invalid' };
   const saved = await persist(() => updateExisting(cardRepository, id, parsed));
   if (!saved.ok) return saved;
   if (!saved.value) return { ok: false, error: 'notfound' };

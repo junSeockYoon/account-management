@@ -318,7 +318,7 @@
           <option value="debit">체크카드</option>
         </select>
       </label>
-      <label class="block text-[13px] font-medium text-[#4E5968]">끝 네 자리<input name="lastFour" inputmode="numeric" maxlength="4" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px]" placeholder="선택"></label>
+      <label class="block text-[13px] font-medium text-[#4E5968]">끝 네 자리<input name="lastFour" required inputmode="numeric" minlength="4" maxlength="4" pattern="[0-9]{4}" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px]" placeholder="1234" title="숫자 4자리"></label>
       <div data-credit-only>
         <label class="block text-[13px] font-medium text-[#4E5968]">미결제 대금<input name="unpaidAmount" inputmode="numeric" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px]" value="0"></label>
       </div>
