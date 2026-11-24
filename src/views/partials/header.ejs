@@ -4,9 +4,14 @@
       <p class="text-[13px] text-[#8B95A1] md:hidden"><%= profile.name %>님</p>
       <h1 class="truncate text-[22px] font-bold leading-tight"><%= pageTitle %></h1>
     </div>
-    <p class="shrink-0 text-right text-[13px] leading-5 text-[#6B7684]">
-      <span class="block text-[12px] text-[#8B95A1]">기준일</span>
-      <span class="font-medium text-[#4E5968]"><%= asOfLabel %></span>
-    </p>
+    <div class="flex shrink-0 items-center gap-4">
+      <p class="text-right text-[13px] leading-5 text-[#6B7684]">
+        <span class="block text-[12px] text-[#8B95A1]">기준일</span>
+        <span class="font-medium text-[#4E5968]"><%= asOfLabel %></span>
+      </p>
+      <form method="post" action="/logout" class="md:hidden">
+        <button type="submit" class="text-[13px] font-medium text-[#4E5968]">로그아웃</button>
+      </form>
+    </div>
   </div>
 </header>

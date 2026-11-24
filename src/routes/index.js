@@ -3,12 +3,19 @@ const dashboardController = require('../controllers/dashboardController');
 const assetController = require('../controllers/assetController');
 const transactionController = require('../controllers/transactionController');
 const analyticsController = require('../controllers/analyticsController');
+const authController = require('../controllers/authController');
 
 function guard(handler) {
   return (req, res, next) => Promise.resolve(handler(req, res, next)).catch(next);
 }
 
 const router = express.Router();
+
+router.get('/login', authController.show('login'));
+router.post('/login', guard(authController.login));
+router.get('/signup', authController.show('signup'));
+router.post('/signup', guard(authController.signup));
+router.post('/logout', authController.logout);
 
 router.get('/', guard(dashboardController.home));
 router.get('/transactions', guard(transactionController.show));

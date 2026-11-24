@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= mode === 'signup' ? '가입' : '로그인' %> · 자산관리</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-[#F2F4F6] text-[#191F28] antialiased" style="font-family: Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif">
+  <main class="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-5 py-12">
+    <p class="text-[13px] font-semibold text-[#3182F6]">자산관리</p>
+    <h1 class="mt-2 text-[28px] font-bold"><%= mode === 'signup' ? '계정 만들기' : '로그인' %></h1>
+    <p class="mt-2 text-[14px] leading-6 text-[#6B7684]">이 계정으로 저장한 자산과 거래만 볼 수 있습니다.</p>
+    <% if (error) { %>
+      <p class="mt-5 rounded-2xl bg-[#FFF1F1] px-4 py-3 text-[14px] text-[#E11D48]" role="alert"><%= error %></p>
+    <% } %>
+    <form method="post" action="<%= mode === 'signup' ? '/signup' : '/login' %>" class="mt-6 space-y-3 rounded-[20px] border border-[#E5E8EB] bg-white p-6">
+      <% if (mode === 'signup') { %>
+        <label class="block text-[13px] font-medium text-[#4E5968]">이름
+          <input name="name" maxlength="20" autocomplete="nickname" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px] outline-none focus:border-[#3182F6]" placeholder="선택">
+        </label>
+      <% } %>
+      <label class="block text-[13px] font-medium text-[#4E5968]">이메일
+        <input name="email" type="email" required autocomplete="email" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px] outline-none focus:border-[#3182F6]">
+      </label>
+      <label class="block text-[13px] font-medium text-[#4E5968]">비밀번호
+        <input name="password" type="password" required minlength="6" autocomplete="<%= mode === 'signup' ? 'new-password' : 'current-password' %>" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px] outline-none focus:border-[#3182F6]">
+      </label>
+      <button type="submit" class="w-full rounded-xl bg-[#3182F6] py-3 text-[15px] font-semibold text-white"><%= mode === 'signup' ? '가입하기' : '로그인' %></button>
+    </form>
+    <p class="mt-5 text-center text-[14px] text-[#4E5968]">
+      <% if (mode === 'signup') { %>
+        이미 계정이 있으면 <a href="/login" class="font-semibold text-[#3182F6]">로그인</a>
+      <% } else { %>
+        처음이면 <a href="/signup" class="font-semibold text-[#3182F6]">가입</a>
+      <% } %>
+    </p>
+  </main>
+</body>
+</html>

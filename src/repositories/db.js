@@ -192,16 +192,32 @@ const tables = {
 };
 
 function configError() {
-  if (process.env.SUPABASE_URL && process.env.SUPABASE_SECRET_KEY) return null;
+  if (process.env.SUPABASE_URL && process.env.SUPABASE_PUBLISHABLE_KEY) return null;
   return fail('CONFIG');
 }
 
-async function rest(path, { method = 'GET', body } = {}) {
+function userIdFromToken(token) {
+  try {
+    const json = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString('utf8'));
+    return json.sub || '';
+  } catch {
+    return '';
+  }
+}
+
+function requestToken(explicit) {
+  if (explicit) return explicit;
+  return require('./store').getState().accessToken;
+}
+
+async function rest(path, token, { method = 'GET', body } = {}) {
   const missing = configError();
   if (missing) throw missing;
+  const access = requestToken(token);
+  if (!access) throw fail('UNAUTHORIZED');
   const headers = {
-    apikey: process.env.SUPABASE_SECRET_KEY,
-    Authorization: `Bearer ${process.env.SUPABASE_SECRET_KEY}`,
+    apikey: process.env.SUPABASE_PUBLISHABLE_KEY,
+    Authorization: `Bearer ${access}`,
     'Content-Type': 'application/json',
   };
   if (method === 'POST' || method === 'PATCH') headers.Prefer = 'return=representation';
@@ -210,6 +226,7 @@ async function rest(path, { method = 'GET', body } = {}) {
     headers,
     body: body == null ? undefined : JSON.stringify(body),
   });
+  if (response.status === 401) throw fail('UNAUTHORIZED');
   if (!response.ok) {
     console.error(`supabase ${method} ${path.split('?')[0]} ${response.status}`);
     throw fail('WRITE');
@@ -219,29 +236,30 @@ async function rest(path, { method = 'GET', body } = {}) {
   return text ? JSON.parse(text) : null;
 }
 
-async function rows(table, userId) {
+async function rows(table, token, userId) {
   const query = userId ? `?select=*&user_id=eq.${userId}` : '?select=*';
-  const list = await rest(`${table}${query}`);
+  const list = await rest(`${table}${query}`, token);
   return (list || []).map((row) => tables[table].fromRow(row));
 }
 
-async function fetchState() {
+async function fetchState(token) {
   const missing = configError();
   if (missing) throw missing;
-  const profiles = await rest('profiles?select=id,display_name,as_of,usd_rate&limit=1');
+  const profiles = await rest('profiles?select=id,display_name,as_of,usd_rate', token);
   const profile = profiles && profiles[0];
-  const userId = profile ? profile.id : null;
+  const userId = (profile && profile.id) || userIdFromToken(token);
   const [categories, accounts, deposits, savings, stocks, cards, transactions] = await Promise.all([
-    rest('categories?select=id,name,group,color,sort_order&order=sort_order.asc'),
-    userId ? rows('accounts', userId) : [],
-    userId ? rows('deposits', userId) : [],
-    userId ? rows('savings', userId) : [],
-    userId ? rows('stocks', userId) : [],
-    userId ? rows('cards', userId) : [],
-    userId ? rows('transactions', userId) : [],
+    rest('categories?select=id,name,group,color,sort_order&order=sort_order.asc', token),
+    userId ? rows('accounts', token, userId) : [],
+    userId ? rows('deposits', token, userId) : [],
+    userId ? rows('savings', token, userId) : [],
+    userId ? rows('stocks', token, userId) : [],
+    userId ? rows('cards', token, userId) : [],
+    userId ? rows('transactions', token, userId) : [],
   ]);
 
   return {
+    accessToken: token,
     userId,
     asOf: profile ? profile.as_of : todaySeoul(),
     profile: { name: profile ? profile.display_name : '나' },
@@ -263,17 +281,17 @@ async function fetchState() {
 
 async function insert(table, item, userId) {
   if (!userId) throw fail('NO_USER');
-  const saved = await rest(table, { method: 'POST', body: tables[table].toRow(item, userId) });
+  const saved = await rest(table, null, { method: 'POST', body: tables[table].toRow(item, userId) });
   return tables[table].fromRow(saved[0]);
 }
 
 async function update(table, item) {
   const { user_id, ...fields } = tables[table].toRow(item, null);
-  await rest(`${table}?id=eq.${encodeURIComponent(item.id)}`, { method: 'PATCH', body: fields });
+  await rest(`${table}?id=eq.${encodeURIComponent(item.id)}`, null, { method: 'PATCH', body: fields });
 }
 
 async function remove(table, id) {
-  await rest(`${table}?id=eq.${encodeURIComponent(id)}`, { method: 'DELETE' });
+  await rest(`${table}?id=eq.${encodeURIComponent(id)}`, null, { method: 'DELETE' });
 }
 
 module.exports = { fetchState, insert, update, remove };

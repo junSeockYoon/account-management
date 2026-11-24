@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const navItems = require('./src/config/nav');
 const { loadState, runWithState } = require('./src/repositories/store');
+const { ensureAccess } = require('./src/auth/session');
 const { formatKoreanDate, safeJson } = require('./src/utils/format');
 
 const app = express();
@@ -14,21 +15,39 @@ app.locals.safeJson = safeJson;
 app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+const openPaths = new Set(['/login', '/signup', '/logout']);
+
 app.use((req, res, next) => {
-  loadState()
-    .then((state) => {
-      runWithState(state, () => {
-        res.locals.profile = state.profile;
-        res.locals.asOfLabel = formatKoreanDate(state.asOf);
-        res.locals.pageTitle = '자산관리';
-        res.locals.navItems = navItems.map((item) => ({
-          ...item,
-          active: item.href === '/' ? req.path === '/' : req.path.startsWith(item.href),
-        }));
-        next();
+  if (openPaths.has(req.path)) {
+    next();
+    return;
+  }
+  ensureAccess(req, res)
+    .then((token) => {
+      if (!token) {
+        res.redirect(303, '/login');
+        return;
+      }
+      return loadState(token).then((state) => {
+        runWithState(state, () => {
+          res.locals.profile = state.profile;
+          res.locals.asOfLabel = formatKoreanDate(state.asOf);
+          res.locals.pageTitle = '자산관리';
+          res.locals.navItems = navItems.map((item) => ({
+            ...item,
+            active: item.href === '/' ? req.path === '/' : req.path.startsWith(item.href),
+          }));
+          next();
+        });
       });
     })
-    .catch(next);
+    .catch((err) => {
+      if (err.code === 'UNAUTHORIZED') {
+        res.redirect(303, '/login');
+        return;
+      }
+      next(err);
+    });
 });
 
 app.use(require('./src/routes'));
