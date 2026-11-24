@@ -19,6 +19,7 @@ router.post('/signup', guard(authController.signup));
 router.post('/logout', authController.logout);
 
 router.get('/', guard(dashboardController.home));
+router.post('/spending-target', guard(dashboardController.saveTarget));
 router.post('/card-limit', guard(analyticsController.saveCardLimit));
 router.get('/transactions/new', guard(transactionController.entry));
 router.get('/transactions', guard(transactionController.show));

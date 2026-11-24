@@ -317,6 +317,7 @@ async function optionalRows(table, token, userId) {
 
 async function loadProfiles(token) {
   const selects = [
+    'id,display_name,as_of,usd_rate,monthly_card_limit,card_cycle_day,cut_category_id,cut_amount,cut_month,report_hash,report_text',
     'id,display_name,as_of,usd_rate,monthly_card_limit,card_cycle_day',
     'id,display_name,as_of,usd_rate,monthly_card_limit',
     'id,display_name,as_of,usd_rate',
@@ -359,6 +360,11 @@ async function fetchState(token) {
       name: profile ? profile.display_name : '나',
       monthlyCardLimit: profile ? num(profile.monthly_card_limit) : null,
       cardCycleDay: profile ? num(profile.card_cycle_day) : null,
+      cutCategoryId: profile && profile.cut_category_id ? profile.cut_category_id : '',
+      cutAmount: profile ? num(profile.cut_amount) : null,
+      cutMonth: profile && profile.cut_month ? profile.cut_month : '',
+      reportHash: profile && profile.report_hash ? profile.report_hash : '',
+      reportText: profile && profile.report_text ? profile.report_text : '',
     },
     fxRate: { base: 'KRW', USD: profile ? num(profile.usd_rate) : null },
     categories: (categories || []).map((row) => ({
@@ -404,6 +410,24 @@ async function updateMonthlyCardLimit(userId, amount, cycleDay) {
   });
 }
 
+async function updateSpendingTarget(userId, target) {
+  await rest(`profiles?id=eq.${encodeURIComponent(userId)}`, null, {
+    method: 'PATCH',
+    body: {
+      cut_category_id: target.categoryId,
+      cut_amount: target.amount,
+      cut_month: target.month,
+    },
+  });
+}
+
+async function updateReportCache(userId, hash, text) {
+  await rest(`profiles?id=eq.${encodeURIComponent(userId)}`, null, {
+    method: 'PATCH',
+    body: { report_hash: hash, report_text: text },
+  });
+}
+
 async function upsertNetWorth(userId, item) {
   await rest('net_worth_months?on_conflict=user_id,month_on', null, {
     method: 'POST',
@@ -416,4 +440,14 @@ async function remove(table, id) {
   await rest(`${table}?id=eq.${encodeURIComponent(id)}`, null, { method: 'DELETE' });
 }
 
-module.exports = { fetchState, insert, update, updateProfileRate, updateMonthlyCardLimit, upsertNetWorth, remove };
+module.exports = {
+  fetchState,
+  insert,
+  update,
+  updateProfileRate,
+  updateMonthlyCardLimit,
+  updateSpendingTarget,
+  updateReportCache,
+  upsertNetWorth,
+  remove,
+};

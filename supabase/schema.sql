@@ -19,6 +19,11 @@ create table public.profiles (
   usd_rate numeric(12, 4) not null default 1380.5 check (usd_rate > 0),
   monthly_card_limit bigint check (monthly_card_limit is null or monthly_card_limit > 0),
   card_cycle_day smallint check (card_cycle_day is null or card_cycle_day between 1 and 31),
+  cut_category_id text,
+  cut_amount bigint constraint profiles_cut_amount_check check (cut_amount is null or cut_amount > 0),
+  cut_month text constraint profiles_cut_month_check check (cut_month is null or cut_month ~ '^\d{4}-\d{2}$'),
+  report_hash text,
+  report_text text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
