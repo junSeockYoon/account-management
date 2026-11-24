@@ -18,6 +18,7 @@ create table public.profiles (
   as_of date not null default current_date,
   usd_rate numeric(12, 4) not null default 1380.5 check (usd_rate > 0),
   monthly_card_limit bigint check (monthly_card_limit is null or monthly_card_limit > 0),
+  card_cycle_day smallint check (card_cycle_day is null or card_cycle_day between 1 and 31),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

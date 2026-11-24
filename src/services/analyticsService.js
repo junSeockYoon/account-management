@@ -98,7 +98,12 @@ function getReport() {
     variable: { amount: variable, text: formatKRW(variable), share: variableShare, shareText: formatShare(variableShare) },
     trend,
     cards: cardRows,
-    cardLimit: cardLimit.present(transactions, asOf, metaRepository.getProfile().monthlyCardLimit),
+    cardLimit: cardLimit.present(
+      transactions,
+      asOf,
+      metaRepository.getProfile().monthlyCardLimit,
+      metaRepository.getProfile().cardCycleDay,
+    ),
     categories: categoryRows,
   };
 }

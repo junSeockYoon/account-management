@@ -249,12 +249,21 @@ async function rows(table, token, userId) {
 }
 
 async function loadProfiles(token) {
-  try {
-    return await rest('profiles?select=id,display_name,as_of,usd_rate,monthly_card_limit', token);
-  } catch (err) {
-    if (err.code !== 'WRITE') throw err;
-    return rest('profiles?select=id,display_name,as_of,usd_rate', token);
+  const selects = [
+    'id,display_name,as_of,usd_rate,monthly_card_limit,card_cycle_day',
+    'id,display_name,as_of,usd_rate,monthly_card_limit',
+    'id,display_name,as_of,usd_rate',
+  ];
+  let lastError;
+  for (const select of selects) {
+    try {
+      return await rest(`profiles?select=${select}`, token);
+    } catch (err) {
+      if (err.code !== 'WRITE') throw err;
+      lastError = err;
+    }
   }
+  throw lastError;
 }
 
 async function fetchState(token) {
@@ -280,6 +289,7 @@ async function fetchState(token) {
     profile: {
       name: profile ? profile.display_name : '나',
       monthlyCardLimit: profile ? num(profile.monthly_card_limit) : null,
+      cardCycleDay: profile ? num(profile.card_cycle_day) : null,
     },
     fxRate: { base: 'KRW', USD: profile ? num(profile.usd_rate) : null },
     categories: (categories || []).map((row) => ({
@@ -315,10 +325,10 @@ async function updateProfileRate(userId, rate) {
   });
 }
 
-async function updateMonthlyCardLimit(userId, amount) {
+async function updateMonthlyCardLimit(userId, amount, cycleDay) {
   await rest(`profiles?id=eq.${encodeURIComponent(userId)}`, null, {
     method: 'PATCH',
-    body: { monthly_card_limit: amount },
+    body: { monthly_card_limit: amount, card_cycle_day: cycleDay },
   });
 }
 

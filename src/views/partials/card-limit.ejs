@@ -2,12 +2,16 @@
   <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
     <div>
       <h2 class="text-[17px] font-bold">이번 달 카드 한도</h2>
-      <p class="mt-1 text-[13px] text-[#8B95A1]"><%= budget.rangeLabel %> · 카드로 결제한 지출만 합산합니다</p>
+      <p class="mt-1 text-[13px] text-[#8B95A1]"><%= budget.rangeLabel %> · 카드로 결제한 지출만 합산합니다. 기준일을 비우면 매월 1일부터입니다.</p>
     </div>
-    <form method="post" action="/card-limit" class="flex items-center gap-2" autocomplete="off">
+    <form method="post" action="/card-limit" class="flex flex-wrap items-end gap-2" autocomplete="off">
       <input type="hidden" name="next" value="<%= next %>">
-      <label class="sr-only" for="card-limit-<%= next %>">카드 한도</label>
-      <input id="card-limit-<%= next %>" name="amount" inputmode="numeric" value="<%= budget.input %>" placeholder="500000" class="w-36 rounded-xl border border-[#E5E8EB] px-3 py-2 text-[15px] tabular-nums outline-none focus:border-[#3182F6]">
+      <label class="text-[13px] font-medium text-[#4E5968]" for="card-limit-<%= next %>">한도
+        <input id="card-limit-<%= next %>" name="amount" inputmode="numeric" value="<%= budget.input %>" placeholder="500000" class="mt-1 block w-36 rounded-xl border border-[#E5E8EB] px-3 py-2 text-[15px] font-normal tabular-nums outline-none focus:border-[#3182F6]">
+      </label>
+      <label class="text-[13px] font-medium text-[#4E5968]" for="card-cycle-<%= next %>">기준일
+        <input id="card-cycle-<%= next %>" name="cycleDay" inputmode="numeric" value="<%= budget.cycleInput %>" placeholder="1" class="mt-1 block w-20 rounded-xl border border-[#E5E8EB] px-3 py-2 text-[15px] font-normal tabular-nums outline-none focus:border-[#3182F6]">
+      </label>
       <button type="submit" class="rounded-full bg-[#3182F6] px-4 py-2 text-[14px] font-semibold text-white">저장</button>
     </form>
   </div>
