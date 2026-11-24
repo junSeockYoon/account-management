@@ -176,6 +176,9 @@ const tables = {
         memo: row.memo || '',
         balanceApplied: row.balance_applied,
         recurringId: row.recurring_id || null,
+        includedInUnpaid: Object.prototype.hasOwnProperty.call(row, 'included_in_unpaid')
+          ? row.included_in_unpaid === true
+          : undefined,
       };
     },
     toRow(item, userId) {
@@ -195,6 +198,7 @@ const tables = {
         balance_applied: item.balanceApplied !== false,
       };
       if (item.recurringId) row.recurring_id = item.recurringId;
+      if (typeof item.includedInUnpaid === 'boolean') row.included_in_unpaid = item.includedInUnpaid;
       return row;
     },
   },

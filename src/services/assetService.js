@@ -27,6 +27,7 @@ const {
   stockProfit,
   stockReturnRate,
   stockCostKRW,
+  cardDebt,
   directionOf,
 } = require('../utils/assetMath');
 
@@ -518,14 +519,19 @@ function presentStocks(usdRate) {
 }
 
 function presentCards() {
-  const cards = cardRepository.findAll().map((card) => ({
+  const transactions = transactionRepository.findAll();
+  const cards = cardRepository.findAll().map((card) => {
+    const debt = cardDebt(card, transactions);
+    const later = card.type === 'credit' ? debt - card.unpaidAmount : 0;
+    return {
     id: card.id,
     issuer: card.issuer,
     name: card.name,
     type: card.type,
     typeLabel: card.type === 'credit' ? '신용' : '체크',
     lastFourText: card.lastFour ? `•••• ${card.lastFour}` : '',
-    unpaidText: formatKRW(card.unpaidAmount),
+    unpaidText: formatKRW(debt),
+    laterText: later > 0 ? `적어 둔 ${formatKRW(card.unpaidAmount)} + 이후 ${formatKRW(later)}` : '',
     thresholdText: formatKRW(card.performanceThreshold),
     paymentText: card.paymentDay ? `결제일 ${card.paymentDay}일` : '',
     linkedText: card.linkedAccountId ? accountLabel(card.linkedAccountId) : '',
@@ -541,7 +547,8 @@ function presentCards() {
       paymentDay: card.paymentDay || '',
       linkedAccountId: card.linkedAccountId || '',
     },
-  }));
+  };
+  });
   return cards.sort((a, b) => Number(b.isDebt) - Number(a.isDebt) || b.form.unpaidAmount - a.form.unpaidAmount);
 }
 
@@ -611,7 +618,7 @@ function getAssetsPage({ tab, notice, error, saved, missed, rate } = {}) {
     + sumBy(savingsRepository.findAll(), (item) => item.accumulated);
   const investment = sumBy(stockRepository.findAll(), (item) => stockValueKRW(item, usdRate));
   const investmentCost = sumBy(stockRepository.findAll(), (item) => stockCostKRW(item, usdRate));
-  const liabilities = sumBy(cardRepository.findAll(), (item) => item.unpaidAmount);
+  const liabilities = sumBy(cardRepository.findAll(), (item) => cardDebt(item, transactionRepository.findAll()));
   const assets = cash + safe + investment;
 
   return {

@@ -20,7 +20,7 @@ const {
 } = require('../utils/format');
 const { getState } = require('../repositories/store');
 const db = require('../repositories/db');
-const { stockValueKRW } = require('../utils/assetMath');
+const { stockValueKRW, cardDebt } = require('../utils/assetMath');
 const cardLimit = require('./cardLimit');
 
 function sumBy(items, pick) {
@@ -168,7 +168,7 @@ function getDashboard() {
   const cash = sumBy(accounts, (account) => account.balance);
   const safe = sumBy(deposits, (deposit) => deposit.principal) + sumBy(savings, (item) => item.accumulated);
   const investment = sumBy(stocks, (stock) => stockValueKRW(stock, usdRate));
-  const liabilities = sumBy(cards, (card) => card.unpaidAmount);
+  const liabilities = sumBy(cards, (card) => cardDebt(card, transactions));
   const assets = cash + safe + investment;
   const netWorth = assets - liabilities;
   const snapshot = {

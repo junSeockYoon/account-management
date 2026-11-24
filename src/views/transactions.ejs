@@ -13,7 +13,7 @@
 <section id="tx-entry" data-as-of="<%= page.asOf %>" class="rounded-[20px] border border-[#E5E8EB] bg-white p-6">
   <form data-editor method="post" action="/transactions" autocomplete="off">
     <h2 class="text-[17px] font-bold">소비 <span data-mode>입력</span></h2>
-    <p class="mt-1 text-[13px] leading-5 text-[#8B95A1]">금액과 날짜를 적으면 목록과 리포트에 남습니다. 체크·현금·계좌는 잔액이 줄고, 신용카드 미결제는 바뀌지 않습니다.</p>
+    <p class="mt-1 text-[13px] leading-5 text-[#8B95A1]">금액과 날짜를 적으면 목록과 리포트에 남습니다. 체크·현금·계좌는 잔액이 줄고, 새로 넣는 신용카드 지출은 미결제 금액에 더해집니다.</p>
     <div class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
       <label class="block text-[13px] font-medium text-[#4E5968]">금액<input name="amount" required inputmode="numeric" class="<%= field %>" placeholder="12000"></label>
       <label class="block text-[13px] font-medium text-[#4E5968]">날짜<input name="date" type="date" required value="<%= page.asOf %>" class="<%= field %>"></label>
@@ -86,7 +86,7 @@
 
 <section class="mt-4 rounded-[20px] border border-[#E5E8EB] bg-white p-6">
   <h2 class="text-[17px] font-bold">매달 고정 지출</h2>
-  <p class="mt-1 text-[13px] leading-5 text-[#8B95A1]">기준일에 그 날이 지나면 고정비 거래가 한 번 생깁니다. 체크·계좌·현금만 잔액이 움직이고, 신용카드 미결제는 그대로입니다. 규칙을 지워도 이미 만든 거래는 남습니다.</p>
+  <p class="mt-1 text-[13px] leading-5 text-[#8B95A1]">기준일에 그 날이 지나면 고정비 거래가 한 번 생깁니다. 새로 생긴 신용카드 지출은 미결제에 더해지고, 목록에서 체크하면 다시 빼집니다. 규칙을 지워도 이미 만든 거래는 남습니다.</p>
   <form data-recurring method="post" action="/recurring" class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2" autocomplete="off">
     <label class="block text-[13px] font-medium text-[#4E5968]">금액<input name="amount" required inputmode="numeric" class="<%= field %>" placeholder="55000"></label>
     <label class="block text-[13px] font-medium text-[#4E5968]">매달<input name="chargeDay" required inputmode="numeric" class="<%= field %>" placeholder="5"></label>
@@ -213,7 +213,8 @@
   <button type="submit" class="rounded-full bg-white px-4 py-3 text-[14px] font-semibold text-[#4E5968]">조회</button>
 </form>
 
-<p class="mb-3 mt-6 text-[13px] text-[#8B95A1]">
+<p class="mt-6 text-[13px] leading-5 text-[#8B95A1]">신용카드 지출을 체크하면 적어 둔 미결제 금액에 이미 들어 있는 지출입니다. 체크를 끄면 그 금액이 미결제에 더해집니다.</p>
+<p class="mb-3 mt-2 text-[13px] text-[#8B95A1]">
   <%= page.dayLabel || '이 조건' %> · <%= page.totals.count %>건
   <% if (page.clearDayHref) { %><a href="<%= page.clearDayHref %>" class="ml-2 font-semibold text-[#3182F6]">달 전체</a><% } %>
 </p>
@@ -228,6 +229,16 @@
           <p class="text-[12px] text-[#8B95A1]"><%= item.dateText %> · <%= item.typeLabel %><% if (item.classLabel) { %> · <%= item.classLabel %><% } %></p>
           <p class="mt-1 truncate font-semibold"><%= item.categoryName %><% if (item.memo) { %> · <%= item.memo %><% } %></p>
           <p class="mt-1 truncate text-[13px] text-[#4E5968]"><%= item.where %></p>
+          <% if (item.statement) { %>
+            <form method="post" action="/transactions/<%= item.id %>/statement" class="mt-2">
+              <input type="hidden" name="month" value="<%= page.month %>">
+              <input type="hidden" name="included" value="0">
+              <label class="inline-flex items-center gap-2 text-[12px] font-medium text-[#4E5968]">
+                <input type="checkbox" name="included" value="1" <%= item.statement.included ? 'checked' : '' %> onchange="this.form.submit()" class="h-4 w-4 accent-[#3182F6]">
+                미결제 금액에 포함
+              </label>
+            </form>
+          <% } %>
         </div>
         <div class="flex items-center justify-between gap-3 sm:justify-end">
           <p class="text-[16px] font-bold tabular-nums sm:text-right <%= toneClass[item.tone] %>"><%= item.amountText %></p>

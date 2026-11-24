@@ -207,6 +207,9 @@ create table public.net_worth_months (
 alter table public.transactions
   add column recurring_id uuid references public.recurring_expenses (id) on delete set null;
 
+alter table public.transactions
+  add column included_in_unpaid boolean not null default true;
+
 create unique index transactions_recurring_month_idx
   on public.transactions (recurring_id, ((date_trunc('month', occurred_on::timestamp))::date))
   where recurring_id is not null;

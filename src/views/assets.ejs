@@ -204,6 +204,7 @@
             <div class="sm:text-right">
               <p class="text-[12px] text-[#8B95A1]"><%= item.isDebt ? '미결제' : '부채 없음' %></p>
               <p class="text-[16px] font-bold tabular-nums"><%= item.unpaidText %></p>
+              <% if (item.laterText) { %><p class="text-[12px] text-[#8B95A1]"><%= item.laterText %></p><% } %>
             </div>
             <%- include('partials/asset-actions', { type: 'card', id: item.id, label: item.label, deleteAction: '/assets/cards/' + item.id + '/delete' }) %>
           </div>
@@ -329,7 +330,7 @@
       <label class="block text-[13px] font-medium text-[#4E5968]">끝 네 자리<input name="lastFour" required inputmode="numeric" minlength="4" maxlength="4" pattern="[0-9]{4}" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px]" placeholder="1234" title="숫자 4자리"></label>
       <div data-credit-only>
         <label class="block text-[13px] font-medium text-[#4E5968]">미결제 대금<input name="unpaidAmount" inputmode="numeric" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px]" value="0"></label>
-        <p class="mt-1 text-[12px] leading-5 text-[#8B95A1]">카드사에 보이는 금액을 적습니다. 지출을 추가해도 이 값은 바뀌지 않습니다.</p>
+        <p class="mt-1 text-[12px] leading-5 text-[#8B95A1]">카드사에 보이는 금액입니다. 거래 목록에서 체크하지 않은 신용카드 지출이 이 금액에 더해집니다.</p>
       </div>
       <label class="block text-[13px] font-medium text-[#4E5968]">실적 기준액<input name="performanceThreshold" required inputmode="numeric" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px]" value="0"></label>
       <label class="block text-[13px] font-medium text-[#4E5968]">결제일<input name="paymentDay" inputmode="numeric" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px]" placeholder="선택, 1–31"></label>

@@ -24,6 +24,7 @@ router.get('/transactions', guard(transactionController.show));
 router.post('/transactions', guard(transactionController.create));
 router.post('/recurring', guard(recurringController.create));
 router.post('/recurring/:id/delete', guard(recurringController.remove));
+router.post('/transactions/:id/statement', guard(transactionController.setStatement));
 router.post('/transactions/:id/update', guard(transactionController.update));
 router.post('/transactions/:id/delete', guard(transactionController.remove));
 router.get('/assets', guard(assetController.show));

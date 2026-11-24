@@ -26,6 +26,16 @@ function stockCostKRW(stock, usdRate) {
   return Math.round(cost * rate);
 }
 
+function cardDebt(card, transactions) {
+  if (!card || card.type !== 'credit') return 0;
+  const later = (transactions || []).reduce((sum, tx) => {
+    if (tx.type !== 'expense' || tx.paymentMethod !== 'card' || tx.cardId !== card.id) return sum;
+    if (tx.includedInUnpaid !== false) return sum;
+    return sum + tx.amount;
+  }, 0);
+  return (Number(card.unpaidAmount) || 0) + later;
+}
+
 function directionOf(amount) {
   if (amount > 0) return 'up';
   if (amount < 0) return 'down';
@@ -38,5 +48,6 @@ module.exports = {
   stockProfit,
   stockReturnRate,
   stockCostKRW,
+  cardDebt,
   directionOf,
 };

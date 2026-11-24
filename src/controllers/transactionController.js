@@ -24,4 +24,8 @@ async function remove(req, res) {
   redirectTo(res, await transactionService.remove(req.params.id, req.body));
 }
 
-module.exports = { show, create, update, remove };
+async function setStatement(req, res) {
+  redirectTo(res, await transactionService.setStatement(req.params.id, req.body));
+}
+
+module.exports = { show, create, update, remove, setStatement };

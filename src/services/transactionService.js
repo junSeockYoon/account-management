@@ -20,6 +20,7 @@ const ERRORS = {
   invalid: '입력값을 다시 확인해 주세요.',
   notfound: '거래를 찾지 못했습니다.',
   nouser: 'Supabase에 가입한 사용자가 없어 저장할 수 없습니다.',
+  statement: '미결제 포함 여부를 저장하지 못했습니다. Supabase에서 card-statement.sql을 실행해 주세요.',
   'recur-invalid': '금액, 날짜, 카테고리, 결제 수단을 다시 확인해 주세요.',
   'recur-write': '고정 지출을 저장하지 못했습니다. Supabase에서 recurring.sql을 실행해 주세요.',
 };
@@ -394,6 +395,9 @@ function decorate(tx, index) {
     amountText: tx.type === 'transfer' ? formatKRW(tx.amount) : formatSignedKRW(signed),
     tone: tx.type === 'income' ? 'up' : tx.type === 'expense' ? 'down' : 'flat',
     confirmLabel: tx.memo || (category ? category.name : '이 거래'),
+    statement: tx.type === 'expense' && index.cards.get(tx.cardId) && index.cards.get(tx.cardId).type === 'credit' && tx.paymentMethod === 'card'
+      ? { included: tx.includedInUnpaid !== false }
+      : null,
     search: [tx.memo, category ? category.name : '', where, TYPE_LABELS[tx.type], classLabel]
       .join(' ')
       .toLowerCase(),
@@ -443,6 +447,10 @@ async function saveEffects(tx) {
 
 async function commitNew(tx) {
   const row = { ...tx, balanceApplied: true };
+  if (row.includedInUnpaid === undefined && row.paymentMethod === 'card') {
+    const card = cardRepository.findById(row.cardId);
+    if (card && card.type === 'credit') row.includedInUnpaid = false;
+  }
   if (!apply(row, 1)) return false;
   await transactionRepository.insert(row);
   await saveEffects(row);
@@ -504,4 +512,22 @@ async function remove(id, body) {
   return ok('deleted', month);
 }
 
-module.exports = { getPage, create, update, remove, commitNew };
+async function setStatement(id, body) {
+  const tx = transactionRepository.findById(id);
+  if (!tx) return fail('notfound', body);
+  const card = tx.paymentMethod === 'card' ? cardRepository.findById(tx.cardId) : null;
+  if (tx.type !== 'expense' || !card || card.type !== 'credit') return fail('invalid', body);
+  const raw = body.included;
+  const value = Array.isArray(raw) ? raw[raw.length - 1] : raw;
+  tx.includedInUnpaid = value === '1';
+  try {
+    await transactionRepository.save(tx);
+  } catch (err) {
+    const failed = writeFailure(err);
+    if (failed) return { ...failed, error: 'statement', month: monthFrom(body) };
+    throw err;
+  }
+  return ok('statement', monthFrom(body));
+}
+
+module.exports = { getPage, create, update, remove, commitNew, setStatement };
