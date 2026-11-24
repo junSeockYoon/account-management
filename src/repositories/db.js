@@ -228,6 +228,25 @@ const tables = {
       };
     },
   },
+  weekly_challenges: {
+    fromRow(row) {
+      return {
+        weekStart: row.week_start,
+        categoryId: row.category_id || '',
+        limitAmount: num(row.limit_amount),
+        status: row.status,
+      };
+    },
+    toRow(item, userId) {
+      return {
+        user_id: userId,
+        week_start: item.weekStart,
+        category_id: item.categoryId || null,
+        limit_amount: item.limitAmount,
+        status: item.status,
+      };
+    },
+  },
   net_worth_months: {
     fromRow(row) {
       return {
@@ -340,7 +359,7 @@ async function fetchState(token) {
   const profiles = await loadProfiles(token);
   const profile = profiles && profiles[0];
   const userId = (profile && profile.id) || userIdFromToken(token);
-  const [categories, accounts, deposits, savings, stocks, cards, transactions, recurring, netWorthMonths] = await Promise.all([
+  const [categories, accounts, deposits, savings, stocks, cards, transactions, recurring, netWorthMonths, weeklyChallenges] = await Promise.all([
     rest('categories?select=id,name,group,color,sort_order&order=sort_order.asc', token),
     userId ? rows('accounts', token, userId) : [],
     userId ? rows('deposits', token, userId) : [],
@@ -350,6 +369,7 @@ async function fetchState(token) {
     userId ? rows('transactions', token, userId) : [],
     optionalRows('recurring_expenses', token, userId),
     optionalRows('net_worth_months', token, userId),
+    optionalRows('weekly_challenges', token, userId),
   ]);
 
   return {
@@ -381,6 +401,7 @@ async function fetchState(token) {
     transactions,
     recurring,
     netWorthMonths,
+    weeklyChallenges,
     recurringNotice: '',
   };
 }

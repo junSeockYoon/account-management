@@ -5,6 +5,7 @@ const transactionRepository = require('../repositories/transactionRepository');
 const categoryRepository = require('../repositories/categoryRepository');
 const metaRepository = require('../repositories/metaRepository');
 const recurringRepository = require('../repositories/recurringRepository');
+const weeklyChallenge = require('../services/weeklyChallenge');
 const form = require('../utils/form');
 const { formatKRW, formatSignedKRW, formatMonthDay } = require('../utils/format');
 
@@ -142,8 +143,12 @@ function fail(error, body) {
   return { ok: false, error, month: monthFrom(body) };
 }
 
-function ok(notice, month) {
-  return { ok: true, notice, month };
+function ok(notice, month, detail) {
+  return { ok: true, notice, month, detail: detail || '' };
+}
+
+function cleanDetail(value) {
+  return String(value || '').replace(/\s+/g, ' ').trim().slice(0, 120);
 }
 
 function categoryOf(id, group) {
@@ -412,6 +417,7 @@ function getPage(query) {
       nextHref: monthIndex > 0 ? pageHref({ month: months[monthIndex - 1].value, ...hrefParams }) : '',
     },
     notice: NOTICES[query.notice] || '',
+    detail: cleanDetail(query.detail),
     error: ERRORS[query.error] || '',
   };
 }
@@ -526,7 +532,7 @@ async function create(body) {
     if (failed) return { ...failed, month: parsed.date.slice(0, 7) };
     throw err;
   }
-  return ok('created', parsed.date.slice(0, 7));
+  return ok('created', parsed.date.slice(0, 7), weeklyChallenge.savedText(parsed));
 }
 
 async function update(id, body) {
@@ -552,7 +558,7 @@ async function update(id, body) {
     if (failed) return { ...failed, month: tx.date.slice(0, 7) };
     throw err;
   }
-  return ok('updated', tx.date.slice(0, 7));
+  return ok('updated', tx.date.slice(0, 7), weeklyChallenge.savedText(tx));
 }
 
 async function remove(id, body) {
@@ -568,7 +574,7 @@ async function remove(id, body) {
     if (failed) return { ...failed, month };
     throw err;
   }
-  return ok('deleted', month);
+  return ok('deleted', month, weeklyChallenge.savedText(tx));
 }
 
 async function setStatement(id, body) {

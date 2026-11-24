@@ -4,6 +4,7 @@ function redirectTo(res, result) {
   const params = new URLSearchParams();
   if (result.month) params.set('month', result.month);
   params.set(result.ok ? 'notice' : 'error', result.ok ? result.notice : result.error);
+  if (result.detail) params.set('detail', result.detail);
   res.redirect(303, `/transactions?${params}`);
 }
 

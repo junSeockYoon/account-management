@@ -1,0 +1,70 @@
+<style>
+  #challenge-dialog { margin: auto; }
+  #challenge-dialog::backdrop { background: rgba(25, 31, 40, 0.45); }
+</style>
+
+<% if (challenge.active) { %>
+  <section class="mt-4 rounded-[20px] border border-[#E5E8EB] bg-white p-6" aria-label="이번 주 챌린지">
+    <div class="flex items-start justify-between gap-3">
+      <div>
+        <h2 class="text-[17px] font-bold">이번 주 챌린지</h2>
+        <p class="mt-1 text-[13px] text-[#8B95A1]"><%= challenge.active.rangeLabel %> · <%= challenge.active.name %></p>
+      </div>
+    </div>
+    <p class="mt-4 text-[22px] font-bold tabular-nums"><%= challenge.active.spentText %><span class="text-[14px] font-medium text-[#8B95A1]"> / <%= challenge.active.limitText %></span></p>
+    <p class="text-[13px] font-semibold tabular-nums <%= challenge.active.over ? 'text-[#F04452]' : 'text-[#4E5968]' %>">
+      <% if (challenge.active.over) { %>한도를 <%= challenge.active.remainingText %> 넘김<% } else if (challenge.active.met) { %>한도만큼 씀<% } else { %>남음 <%= challenge.active.remainingText %><% } %>
+    </p>
+    <div class="mt-3 h-2 overflow-hidden rounded-full bg-[#F2F4F6]" aria-hidden="true">
+      <div class="h-full rounded-full <%= challenge.active.over ? 'bg-[#F04452]' : 'bg-[#3182F6]' %>" style="width: <%= challenge.active.bar %>%"></div>
+    </div>
+  </section>
+<% } else if (challenge.prompt) { %>
+  <div class="mt-4 flex items-center justify-between gap-3 rounded-[20px] border border-[#E5E8EB] bg-white px-5 py-4">
+    <p class="text-[14px] font-medium">이번 주 챌린지가 아직 없습니다.</p>
+    <button type="button" class="shrink-0 rounded-full bg-[#3182F6] px-4 py-2 text-[13px] font-semibold text-white" data-open-challenge>정하기</button>
+  </div>
+  <dialog id="challenge-dialog" data-open="1" class="w-[min(calc(100%-2rem),440px)] rounded-[20px] border-0 p-0 shadow-xl">
+    <form method="dialog" class="flex items-center justify-between border-b border-[#F2F4F6] px-5 py-4">
+      <h2 class="text-[17px] font-bold"><%= challenge.prompt.headline %></h2>
+      <button type="submit" class="text-[13px] font-medium text-[#8B95A1]" aria-label="닫기">닫기</button>
+    </form>
+    <div class="px-5 py-5">
+      <p class="text-[13px] text-[#8B95A1]"><%= challenge.prompt.rangeLabel %></p>
+      <% if (challenge.prompt.lastResult) { %>
+        <p class="mt-3 rounded-2xl px-4 py-3 text-[14px] leading-6 <%= challenge.prompt.lastResult.success ? 'bg-[#E8F8F3] text-[#087F5B]' : 'bg-[#FFF1F1] text-[#8B1E1E]' %>"><%= challenge.prompt.lastResult.line %></p>
+      <% } %>
+      <% if (challenge.prompt.suggestion) { %>
+        <p class="mt-4 text-[14px] leading-6 text-[#4E5968]"><%= challenge.prompt.suggestion.reason %></p>
+        <% if (challenge.prompt.alreadyText) { %>
+          <p class="mt-2 text-[13px] leading-5 text-[#8B95A1]"><%= challenge.prompt.alreadyText %></p>
+        <% } %>
+        <form method="post" action="/challenge" class="mt-4 space-y-3" autocomplete="off">
+          <label class="block text-[13px] font-medium text-[#4E5968]">카테고리
+            <select name="categoryId" class="mt-1 w-full rounded-xl border border-[#E5E8EB] bg-white px-3 py-3 text-[15px] font-normal">
+              <% challenge.prompt.categories.forEach((item) => { %>
+                <option value="<%= item.id %>" <%= item.id === challenge.prompt.suggestion.categoryId ? 'selected' : '' %>><%= item.name %></option>
+              <% }) %>
+            </select>
+          </label>
+          <label class="block text-[13px] font-medium text-[#4E5968]">이번 주 금액
+            <input name="amount" inputmode="numeric" value="<%= challenge.prompt.suggestion.amount %>" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px] font-normal tabular-nums outline-none focus:border-[#3182F6]">
+          </label>
+          <div class="flex flex-wrap justify-end gap-2 pt-1">
+            <% if (challenge.prompt.suggestion.lower) { %>
+              <button type="submit" name="intent" value="lower" class="rounded-full px-4 py-2.5 text-[14px] font-semibold text-[#3182F6]">한 단계 낮추기</button>
+            <% } %>
+            <button type="submit" name="intent" value="start" class="rounded-full bg-[#3182F6] px-4 py-2.5 text-[14px] font-semibold text-white">이 금액으로 시작</button>
+          </div>
+        </form>
+      <% } else { %>
+        <p class="mt-4 text-[14px] leading-6 text-[#4E5968]"><%= challenge.prompt.emptyText %></p>
+      <% } %>
+      <form method="post" action="/challenge" class="mt-3 flex justify-end">
+        <button type="submit" name="intent" value="skip" class="rounded-full px-4 py-2 text-[13px] font-semibold text-[#4E5968]">이번 주는 쉬기</button>
+      </form>
+    </div>
+  </dialog>
+<% } %>
+
+<script src="/js/challenge.js"></script>

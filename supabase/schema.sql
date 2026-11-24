@@ -345,6 +345,28 @@ for all to authenticated
 using (user_id = auth.uid())
 with check (user_id = auth.uid());
 
+create table public.weekly_challenges (
+  user_id uuid not null references auth.users (id) on delete cascade,
+  week_start date not null,
+  category_id text references public.categories (id),
+  limit_amount bigint,
+  status text not null,
+  primary key (user_id, week_start),
+  constraint weekly_challenge_monday check (extract(isodow from week_start) = 1),
+  constraint weekly_challenge_status check (status in ('active', 'skipped')),
+  constraint weekly_challenge_shape check (
+    (status = 'skipped' and limit_amount is null)
+    or (status = 'active' and category_id is not null and limit_amount between 1 and 100000000)
+  )
+);
+
+alter table public.weekly_challenges enable row level security;
+
+create policy "본인 주간 챌린지" on public.weekly_challenges
+for all to authenticated
+using (user_id = auth.uid())
+with check (user_id = auth.uid());
+
 insert into public.categories (id, name, "group", color, sort_order) values
   ('food', '식비', 'expense', '#4F46E5', 1),
   ('cafe', '카페/간식', 'expense', '#8B5CF6', 2),
