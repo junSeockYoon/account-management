@@ -160,17 +160,20 @@ function parseStock(body, current) {
   const name = form.text(body.name, 40);
   const ticker = form.text(body.ticker, 12);
   const currency = form.oneOf(body.currency, ['KRW', 'USD']);
-  const scale = currency === 'USD' ? 4 : 0;
+  const priceScale = currency === 'USD' ? 4 : 0;
   const quantity = form.decimalAmount(body.quantity, { min: 0.0001, max: 100000000, scale: 4 });
   const averagePrice = currency
-    ? form.decimalAmount(body.averagePrice, { min: 0, max: 100000000000, scale: currency === 'USD' ? 4 : 0 })
+    ? form.decimalAmount(body.averagePrice, { min: 0, max: 100000000000, scale: priceScale })
     : null;
-  const currentValue = currency
-    ? form.decimalAmount(body.currentValue, { min: 0, max: 100000000000, scale: currency === 'USD' ? 4 : 0 })
+  const currentPrice = currency
+    ? form.decimalAmount(body.currentPrice, { min: 0, max: 100000000000, scale: priceScale })
     : null;
-  if (!name || !ticker || !currency || quantity == null || averagePrice == null || currentValue == null) return null;
-  const roundedQuantity = quantity;
-  const currentPrice = Math.round((currentValue / roundedQuantity) * 10000) / 10000;
+  if (!name || !ticker || !currency || quantity == null || averagePrice == null || currentPrice == null) return null;
+  const storedAverage = priceScale === 0 ? Math.round(averagePrice) : averagePrice;
+  const storedPrice = priceScale === 0 ? Math.round(currentPrice) : currentPrice;
+  const currentValue = priceScale === 0
+    ? Math.round(quantity * storedPrice)
+    : Math.round(quantity * storedPrice * 10000) / 10000;
   const currencyChanged = current && current.currency !== currency;
   let market = current?.market;
   if (!market || currencyChanged) market = currency === 'USD' ? 'NASDAQ' : 'KRX';
@@ -178,10 +181,10 @@ function parseStock(body, current) {
     name,
     ticker: ticker.toUpperCase(),
     currency,
-    quantity: roundedQuantity,
-    averagePrice: scale === 0 ? Math.round(averagePrice) : averagePrice,
-    currentValue: scale === 0 ? Math.round(currentValue) : currentValue,
-    currentPrice,
+    quantity,
+    averagePrice: storedAverage,
+    currentValue,
+    currentPrice: storedPrice,
     market,
     priceUpdatedAt: metaRepository.getAsOf(),
   };
@@ -478,6 +481,7 @@ function presentStocks(usdRate) {
       currency: stock.currency,
       quantityText: formatQuantity(stock.quantity),
       averageText: moneyText(stock.averagePrice, stock.currency),
+      currentText: moneyText(stock.currentPrice, stock.currency),
       valueText: moneyText(stock.currentValue, stock.currency),
       valueKrwText: stock.currency === 'USD' ? formatKRW(valueKrw) : '',
       profitText: signedMoneyText(profit, stock.currency),
@@ -490,7 +494,7 @@ function presentStocks(usdRate) {
         currency: stock.currency,
         quantity: stock.quantity,
         averagePrice: stock.averagePrice,
-        currentValue: stock.currentValue,
+        currentPrice: stock.currentPrice,
       },
     };
   });

@@ -142,7 +142,7 @@
     </div>
     <button type="button" class="rounded-full bg-[#3182F6] px-4 py-2 text-[14px] font-semibold text-white" data-asset-action="create" data-asset-type="stock">종목 등록</button>
   </div>
-  <p class="mb-3 text-[12px] text-[#8B95A1]">수익률은 평가액과 평균 매입가로 계산합니다. <%= assets.fxLabel %></p>
+  <p class="mb-3 text-[12px] text-[#8B95A1]">수익률은 1주 현재가와 평균 매입가를 비교합니다. 평가액은 수량 × 현재가입니다. <%= assets.fxLabel %></p>
   <% if (assets.stocks.length === 0) { %>
     <p class="rounded-[20px] border border-[#E5E8EB] bg-white px-6 py-12 text-center text-[14px] text-[#8B95A1]">등록된 주식이 없습니다.</p>
   <% } else { %>
@@ -152,7 +152,7 @@
           <div class="min-w-0">
             <p class="text-[12px] text-[#8B95A1]"><%= item.ticker %> · <%= item.currency %></p>
             <p class="mt-1 truncate font-semibold"><%= item.name %></p>
-            <p class="mt-1 text-[13px] text-[#4E5968]"><%= item.quantityText %> · 평균 <%= item.averageText %></p>
+            <p class="mt-1 text-[13px] text-[#4E5968]"><%= item.quantityText %> · 평균 <%= item.averageText %> · 현재 <%= item.currentText %></p>
           </div>
           <div class="flex items-center justify-between gap-3 sm:justify-end">
             <div class="sm:text-right">
@@ -295,10 +295,10 @@
         </select>
       </label>
       <label class="block text-[13px] font-medium text-[#4E5968]">보유 수량<input name="quantity" required inputmode="decimal" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px]"></label>
-      <label class="block text-[13px] font-medium text-[#4E5968]">평균 매입가<input name="averagePrice" required inputmode="decimal" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px]"></label>
-      <label class="block text-[13px] font-medium text-[#4E5968]">현재 평가액<input name="currentValue" required inputmode="decimal" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px]"></label>
+      <label class="block text-[13px] font-medium text-[#4E5968]">평균 매입가<input name="averagePrice" required inputmode="decimal" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px]" placeholder="1주 가격"></label>
+      <label class="block text-[13px] font-medium text-[#4E5968]">현재가<input name="currentPrice" required inputmode="decimal" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px]" placeholder="1주 가격"></label>
     </div>
-    <p class="mt-3 text-[12px] leading-5 text-[#8B95A1]">평가액은 해당 통화의 총액입니다. 저장하면 평가손익과 수익률이 다시 계산됩니다.</p>
+    <p class="mt-3 text-[12px] leading-5 text-[#8B95A1]">현재가는 1주 가격입니다. 평가액은 수량 × 현재가로 계산합니다.</p>
     <div class="mt-6 flex justify-end gap-2">
       <button type="button" class="rounded-full px-4 py-2 text-[14px] font-semibold text-[#4E5968]" data-close-dialog>취소</button>
       <button type="submit" class="rounded-full bg-[#3182F6] px-4 py-2 text-[14px] font-semibold text-white">저장</button>
