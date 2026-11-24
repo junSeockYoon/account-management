@@ -64,6 +64,18 @@
     if (text) text.textContent = housing ? '만기일 (선택)' : '만기일';
   }
 
+  function toggleStock(form) {
+    const currency = form.elements.namedItem('currency');
+    const fx = form.elements.namedItem('purchaseFx');
+    const box = form.querySelector('[data-fx-only]');
+    if (!currency || !fx || !box) return;
+    const usd = currency.value === 'USD';
+    box.hidden = !usd;
+    fx.required = usd;
+    fx.disabled = !usd;
+    if (usd && !fx.value && fx.dataset.todayRate) fx.value = fx.dataset.todayRate;
+  }
+
   function openDialog(type, id) {
     const config = types[type];
     const dialog = document.getElementById(config.dialogId);
@@ -94,6 +106,7 @@
 
     toggleCard(form);
     toggleSavings(form);
+    toggleStock(form);
     dialog.showModal();
   }
 
@@ -126,6 +139,10 @@
     const kindField = dialog.querySelector('[name="productKind"]');
     if (kindField) {
       kindField.addEventListener('change', () => toggleSavings(kindField.form));
+    }
+    const currencyField = dialog.querySelector('[name="currency"]');
+    if (currencyField) {
+      currencyField.addEventListener('change', () => toggleStock(currencyField.form));
     }
   });
 })();

@@ -173,6 +173,10 @@ function parseStock(body, current) {
     ? form.decimalAmount(body.currentPrice, { min: 0, max: 100000000000, scale: priceScale })
     : null;
   if (!name || !ticker || !currency || quantity == null || averagePrice == null || currentPrice == null) return null;
+  const purchaseFx = currency === 'USD'
+    ? form.decimalAmount(body.purchaseFx, { min: 0.0001, max: 100000, scale: 4 })
+    : null;
+  if (currency === 'USD' && purchaseFx == null) return null;
   const storedAverage = priceScale === 0 ? Math.round(averagePrice) : averagePrice;
   const storedPrice = priceScale === 0 ? Math.round(currentPrice) : currentPrice;
   const currentValue = priceScale === 0
@@ -189,6 +193,7 @@ function parseStock(body, current) {
     averagePrice: storedAverage,
     currentValue,
     currentPrice: storedPrice,
+    purchaseFx,
     market,
     priceUpdatedAt: metaRepository.getAsOf(),
   };
@@ -487,6 +492,9 @@ function presentStocks(usdRate) {
       averageText: moneyText(stock.averagePrice, stock.currency),
       currentText: moneyText(stock.currentPrice, stock.currency),
       updatedLabel: stock.priceUpdatedAt ? String(stock.priceUpdatedAt).slice(0, 10).replace(/-/g, '.') : '',
+      fxText: stock.currency === 'USD' && stock.purchaseFx
+        ? `매입 ${Number(stock.purchaseFx).toLocaleString('ko-KR')}원`
+        : '',
       valueText: moneyText(stock.currentValue, stock.currency),
       valueKrwText: stock.currency === 'USD' ? formatKRW(valueKrw) : '',
       profitText: signedMoneyText(profit, stock.currency),
@@ -500,6 +508,7 @@ function presentStocks(usdRate) {
         quantity: stock.quantity,
         averagePrice: stock.averagePrice,
         currentPrice: stock.currentPrice,
+        purchaseFx: stock.purchaseFx || '',
       },
     };
   });
@@ -624,7 +633,8 @@ function getAssetsPage({ tab, notice, error, saved, missed, rate } = {}) {
       profitDirection: directionOf(investment - investmentCost),
       debtText: formatKRW(liabilities),
     },
-    fxLabel: usdRate ? `달러 주식은 1달러 = ${usdRate.toLocaleString('ko-KR')}원으로 환산합니다` : '',
+    fxLabel: usdRate ? `달러 평가액은 1달러 = ${usdRate.toLocaleString('ko-KR')}원입니다. 원화 원금은 매입 환율을 씁니다.` : '',
+    usdRate: usdRate || '',
     accounts,
     deposits,
     savings,

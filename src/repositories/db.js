@@ -110,6 +110,7 @@ const tables = {
         currentPrice: num(row.current_price),
         currentValue: num(row.current_value),
         currency: row.currency,
+        purchaseFx: num(row.purchase_fx),
         priceUpdatedAt: row.price_updated_on,
       };
     },
@@ -124,6 +125,7 @@ const tables = {
         current_price: item.currentPrice,
         current_value: item.currentValue,
         currency: item.currency,
+        purchase_fx: item.currency === 'USD' ? item.purchaseFx : null,
         price_updated_on: item.priceUpdatedAt,
       };
     },

@@ -20,8 +20,10 @@ function stockReturnRate(stock) {
 
 function stockCostKRW(stock, usdRate) {
   const cost = stockCost(stock);
-  if (stock.currency === 'USD') return Math.round(cost * usdRate);
-  return Math.round(cost);
+  if (stock.currency !== 'USD') return Math.round(cost);
+  const rate = Number(stock.purchaseFx) > 0 ? Number(stock.purchaseFx) : Number(usdRate);
+  if (!(rate > 0)) return 0;
+  return Math.round(cost * rate);
 }
 
 function directionOf(amount) {

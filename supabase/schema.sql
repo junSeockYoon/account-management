@@ -85,6 +85,7 @@ create table public.stocks (
   current_price numeric(18, 4) not null check (current_price >= 0),
   current_value numeric(18, 4) not null check (current_value >= 0),
   currency text not null check (currency in ('KRW', 'USD')),
+  purchase_fx numeric(12, 4) check (purchase_fx is null or purchase_fx > 0),
   price_updated_on date not null default current_date,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
