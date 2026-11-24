@@ -1,0 +1,16 @@
+<nav class="fixed inset-x-0 bottom-0 z-30 border-t border-[#E5E8EB] bg-white pb-[env(safe-area-inset-bottom)] md:hidden" aria-label="하단 메뉴">
+  <ul class="grid grid-cols-4">
+    <% navItems.forEach((item) => { %>
+      <li>
+        <a
+          href="<%= item.href %>"
+          class="flex flex-col items-center gap-1 px-1 py-2.5 text-[11px] font-medium <%= item.active ? 'text-[#3182F6]' : 'text-[#8B95A1]' %>"
+          <% if (item.active) { %>aria-current="page"<% } %>
+        >
+          <%- include('icon', { iconName: item.icon }) %>
+          <%= item.shortLabel %>
+        </a>
+      </li>
+    <% }) %>
+  </ul>
+</nav>

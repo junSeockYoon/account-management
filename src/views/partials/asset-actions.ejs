@@ -1,0 +1,12 @@
+<div class="flex shrink-0 items-center gap-2">
+  <button
+    type="button"
+    class="rounded-full px-3 py-1.5 text-[13px] font-semibold text-[#3182F6] hover:bg-[#E8F3FF]"
+    data-asset-action="edit"
+    data-asset-type="<%= type %>"
+    data-asset-id="<%= id %>"
+  >수정</button>
+  <form method="post" action="<%= deleteAction %>" data-confirm="<%= label %>">
+    <button type="submit" class="rounded-full px-3 py-1.5 text-[13px] font-semibold text-[#F04452] hover:bg-[#FFF1F1]">삭제</button>
+  </form>
+</div>

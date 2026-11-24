@@ -1,0 +1,340 @@
+<%- include('partials/open') %>
+<% const toneClass = { up: 'text-[#F04452]', down: 'text-[#3182F6]', flat: 'text-[#4E5968]' }; %>
+<style>
+  dialog { margin: auto; }
+  dialog::backdrop { background: rgba(25, 31, 40, 0.45); }
+</style>
+
+<% if (assets.error) { %>
+  <p class="mb-4 rounded-2xl bg-[#FFF1F1] px-4 py-3 text-[14px] font-medium text-[#F04452]" role="alert"><%= assets.error %></p>
+<% } %>
+<% if (assets.notice) { %>
+  <p class="mb-4 rounded-2xl bg-[#E8F8F3] px-4 py-3 text-[14px] font-medium text-[#087F5B]" role="status"><%= assets.notice %></p>
+<% } %>
+
+<section class="grid grid-cols-1 gap-3 sm:grid-cols-3" aria-label="자산 요약">
+  <article class="rounded-[20px] border border-[#E5E8EB] bg-white px-5 py-4">
+    <p class="text-[13px] text-[#6B7684]">총자산</p>
+    <p class="mt-1 text-[22px] font-bold tabular-nums"><%= assets.summary.assetsText %></p>
+  </article>
+  <article class="rounded-[20px] border border-[#E5E8EB] bg-white px-5 py-4">
+    <p class="text-[13px] text-[#6B7684]">부채</p>
+    <p class="mt-1 text-[22px] font-bold tabular-nums"><%= assets.summary.liabilitiesText %></p>
+  </article>
+  <article class="rounded-[20px] border border-[#E5E8EB] bg-white px-5 py-4">
+    <p class="text-[13px] text-[#6B7684]">순자산</p>
+    <p class="mt-1 text-[22px] font-bold tabular-nums text-[#3182F6]"><%= assets.summary.netWorthText %></p>
+  </article>
+</section>
+
+<nav class="mt-5 flex gap-2 overflow-x-auto pb-1" aria-label="자산 유형">
+  <% assets.tabs.forEach((tab) => { %>
+    <a
+      href="<%= tab.href %>"
+      class="shrink-0 rounded-full px-4 py-2 text-[14px] font-semibold <%= tab.active ? 'bg-[#3182F6] text-white' : 'bg-white text-[#4E5968]' %>"
+      <% if (tab.active) { %>aria-current="page"<% } %>
+    ><%= tab.label %> <%= tab.count %></a>
+  <% }) %>
+</nav>
+
+<section class="mt-4 <%= assets.activeTab === 'accounts' ? '' : 'hidden' %>">
+  <div class="mb-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <h2 class="text-[17px] font-bold">입출금 계좌</h2>
+      <p class="mt-1 text-[13px] text-[#8B95A1]">현금성 합계 <%= assets.totals.cashText %></p>
+    </div>
+    <button type="button" class="rounded-full bg-[#3182F6] px-4 py-2 text-[14px] font-semibold text-white" data-asset-action="create" data-asset-type="account">계좌 등록</button>
+  </div>
+  <% if (assets.accounts.length === 0) { %>
+    <p class="rounded-[20px] border border-[#E5E8EB] bg-white px-6 py-12 text-center text-[14px] text-[#8B95A1]">등록된 입출금 계좌가 없습니다.</p>
+  <% } else { %>
+    <ul class="divide-y divide-[#F2F4F6] overflow-hidden rounded-[20px] border border-[#E5E8EB] bg-white">
+      <% assets.accounts.forEach((item) => { %>
+        <li class="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div class="min-w-0">
+            <p class="text-[12px] text-[#8B95A1]"><%= item.bankName %> · <%= item.kindLabel %></p>
+            <p class="mt-1 truncate font-semibold"><%= item.name %></p>
+            <% if (item.accountNumber) { %><p class="mt-1 text-[12px] text-[#8B95A1]"><%= item.accountNumber %></p><% } %>
+          </div>
+          <div class="flex items-center justify-between gap-3 sm:justify-end">
+            <p class="text-[16px] font-bold tabular-nums sm:text-right"><%= item.balanceText %></p>
+            <%- include('partials/asset-actions', { type: 'account', id: item.id, label: item.label, deleteAction: '/assets/accounts/' + item.id + '/delete' }) %>
+          </div>
+        </li>
+      <% }) %>
+    </ul>
+  <% } %>
+</section>
+
+<section class="mt-4 <%= assets.activeTab === 'deposits' ? '' : 'hidden' %>">
+  <div class="mb-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <h2 class="text-[17px] font-bold">예금</h2>
+      <p class="mt-1 text-[13px] text-[#8B95A1]">원금 합계 <%= assets.totals.depositText %></p>
+    </div>
+    <button type="button" class="rounded-full bg-[#3182F6] px-4 py-2 text-[14px] font-semibold text-white" data-asset-action="create" data-asset-type="deposit">예금 등록</button>
+  </div>
+  <% if (assets.deposits.length === 0) { %>
+    <p class="rounded-[20px] border border-[#E5E8EB] bg-white px-6 py-12 text-center text-[14px] text-[#8B95A1]">등록된 예금이 없습니다.</p>
+  <% } else { %>
+    <ul class="divide-y divide-[#F2F4F6] overflow-hidden rounded-[20px] border border-[#E5E8EB] bg-white">
+      <% assets.deposits.forEach((item) => { %>
+        <li class="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div class="min-w-0">
+            <p class="text-[12px] text-[#8B95A1]"><%= item.bankName %> · 연 <%= item.rateText %></p>
+            <p class="mt-1 truncate font-semibold"><%= item.name %></p>
+            <p class="mt-1 text-[13px] text-[#4E5968]">만기 <%= item.dateLabel %></p>
+          </div>
+          <div class="flex items-center justify-between gap-3 sm:justify-end">
+            <div class="sm:text-right">
+              <p class="text-[16px] font-bold tabular-nums"><%= item.principalText %></p>
+              <p class="mt-1 text-[13px] font-semibold tabular-nums <%= item.urgent ? 'text-[#F04452]' : 'text-[#8B95A1]' %>"><%= item.ddayLabel %></p>
+            </div>
+            <%- include('partials/asset-actions', { type: 'deposit', id: item.id, label: item.label, deleteAction: '/assets/deposits/' + item.id + '/delete' }) %>
+          </div>
+        </li>
+      <% }) %>
+    </ul>
+  <% } %>
+</section>
+
+<section class="mt-4 <%= assets.activeTab === 'savings' ? '' : 'hidden' %>">
+  <div class="mb-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <h2 class="text-[17px] font-bold">적금</h2>
+      <p class="mt-1 text-[13px] text-[#8B95A1]">누적액 합계 <%= assets.totals.savingsText %></p>
+    </div>
+    <button type="button" class="rounded-full bg-[#3182F6] px-4 py-2 text-[14px] font-semibold text-white" data-asset-action="create" data-asset-type="savings">적금 등록</button>
+  </div>
+  <% if (assets.savings.length === 0) { %>
+    <p class="rounded-[20px] border border-[#E5E8EB] bg-white px-6 py-12 text-center text-[14px] text-[#8B95A1]">등록된 적금이 없습니다.</p>
+  <% } else { %>
+    <ul class="divide-y divide-[#F2F4F6] overflow-hidden rounded-[20px] border border-[#E5E8EB] bg-white">
+      <% assets.savings.forEach((item) => { %>
+        <li class="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div class="min-w-0">
+            <p class="text-[12px] text-[#8B95A1]"><%= item.bankName %></p>
+            <p class="mt-1 truncate font-semibold"><%= item.name %></p>
+            <p class="mt-1 text-[13px] text-[#4E5968]">월 <%= item.monthlyText %> · <%= item.transferText %></p>
+            <p class="mt-1 text-[13px] text-[#8B95A1]">만기 <%= item.dateLabel %></p>
+          </div>
+          <div class="flex items-center justify-between gap-3 sm:justify-end">
+            <div class="sm:text-right">
+              <p class="text-[16px] font-bold tabular-nums"><%= item.accumulatedText %></p>
+              <p class="mt-1 text-[13px] font-semibold tabular-nums <%= item.urgent ? 'text-[#F04452]' : 'text-[#8B95A1]' %>"><%= item.ddayLabel %></p>
+            </div>
+            <%- include('partials/asset-actions', { type: 'savings', id: item.id, label: item.label, deleteAction: '/assets/savings/' + item.id + '/delete' }) %>
+          </div>
+        </li>
+      <% }) %>
+    </ul>
+  <% } %>
+</section>
+
+<section class="mt-4 <%= assets.activeTab === 'stocks' ? '' : 'hidden' %>">
+  <div class="mb-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <h2 class="text-[17px] font-bold">주식</h2>
+      <p class="mt-1 text-[13px] text-[#8B95A1]">
+        평가액 <%= assets.totals.investmentText %> · 평가손익
+        <span class="font-semibold <%= toneClass[assets.totals.profitDirection] %>"><%= assets.totals.profitText %></span>
+      </p>
+    </div>
+    <button type="button" class="rounded-full bg-[#3182F6] px-4 py-2 text-[14px] font-semibold text-white" data-asset-action="create" data-asset-type="stock">종목 등록</button>
+  </div>
+  <p class="mb-3 text-[12px] text-[#8B95A1]">수익률은 평가액과 평균 매입가로 계산합니다. <%= assets.fxLabel %></p>
+  <% if (assets.stocks.length === 0) { %>
+    <p class="rounded-[20px] border border-[#E5E8EB] bg-white px-6 py-12 text-center text-[14px] text-[#8B95A1]">등록된 주식이 없습니다.</p>
+  <% } else { %>
+    <ul class="divide-y divide-[#F2F4F6] overflow-hidden rounded-[20px] border border-[#E5E8EB] bg-white">
+      <% assets.stocks.forEach((item) => { %>
+        <li class="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div class="min-w-0">
+            <p class="text-[12px] text-[#8B95A1]"><%= item.ticker %> · <%= item.currency %></p>
+            <p class="mt-1 truncate font-semibold"><%= item.name %></p>
+            <p class="mt-1 text-[13px] text-[#4E5968]"><%= item.quantityText %> · 평균 <%= item.averageText %></p>
+          </div>
+          <div class="flex items-center justify-between gap-3 sm:justify-end">
+            <div class="sm:text-right">
+              <p class="text-[16px] font-bold tabular-nums"><%= item.valueText %></p>
+              <% if (item.valueKrwText) { %><p class="text-[12px] tabular-nums text-[#8B95A1]"><%= item.valueKrwText %></p><% } %>
+              <p class="mt-1 text-[13px] font-semibold tabular-nums <%= toneClass[item.direction] %>">
+                <%= item.profitText %> · <%= item.rateText %>
+              </p>
+            </div>
+            <%- include('partials/asset-actions', { type: 'stock', id: item.id, label: item.label, deleteAction: '/assets/stocks/' + item.id + '/delete' }) %>
+          </div>
+        </li>
+      <% }) %>
+    </ul>
+  <% } %>
+</section>
+
+<section class="mt-4 <%= assets.activeTab === 'cards' ? '' : 'hidden' %>">
+  <div class="mb-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <h2 class="text-[17px] font-bold">부채 / 카드</h2>
+      <p class="mt-1 text-[13px] text-[#8B95A1]">신용카드 미결제 <%= assets.totals.debtText %></p>
+    </div>
+    <button type="button" class="rounded-full bg-[#3182F6] px-4 py-2 text-[14px] font-semibold text-white" data-asset-action="create" data-asset-type="card">카드 등록</button>
+  </div>
+  <% if (assets.cards.length === 0) { %>
+    <p class="rounded-[20px] border border-[#E5E8EB] bg-white px-6 py-12 text-center text-[14px] text-[#8B95A1]">등록된 카드가 없습니다.</p>
+  <% } else { %>
+    <ul class="divide-y divide-[#F2F4F6] overflow-hidden rounded-[20px] border border-[#E5E8EB] bg-white">
+      <% assets.cards.forEach((item) => { %>
+        <li class="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div class="min-w-0">
+            <p class="text-[12px] text-[#8B95A1]"><%= item.issuer %> · <%= item.typeLabel %><% if (item.lastFourText) { %> · <%= item.lastFourText %><% } %></p>
+            <p class="mt-1 truncate font-semibold"><%= item.name %></p>
+            <p class="mt-1 text-[13px] text-[#4E5968]">
+              <% if (item.isDebt) { %>
+                실적 기준 <%= item.thresholdText %><% if (item.paymentText) { %> · <%= item.paymentText %><% } %>
+              <% } else { %>
+                <%= item.linkedText %>
+              <% } %>
+            </p>
+          </div>
+          <div class="flex items-center justify-between gap-3 sm:justify-end">
+            <div class="sm:text-right">
+              <p class="text-[12px] text-[#8B95A1]"><%= item.isDebt ? '미결제' : '부채 없음' %></p>
+              <p class="text-[16px] font-bold tabular-nums"><%= item.unpaidText %></p>
+            </div>
+            <%- include('partials/asset-actions', { type: 'card', id: item.id, label: item.label, deleteAction: '/assets/cards/' + item.id + '/delete' }) %>
+          </div>
+        </li>
+      <% }) %>
+    </ul>
+  <% } %>
+</section>
+
+<dialog id="dialog-account" class="w-[min(calc(100%-2rem),440px)] rounded-[20px] border-0 p-0 shadow-xl">
+  <form data-editor method="post" action="/assets/accounts" class="p-6" autocomplete="off">
+    <h2 class="text-[18px] font-bold">입출금 계좌 <span data-mode>등록</span></h2>
+    <div class="mt-5 space-y-4">
+      <label class="block text-[13px] font-medium text-[#4E5968]">은행명<input name="bankName" required maxlength="30" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px] outline-none focus:border-[#3182F6]"></label>
+      <label class="block text-[13px] font-medium text-[#4E5968]">계좌명<input name="name" required maxlength="30" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px] outline-none focus:border-[#3182F6]"></label>
+      <label class="block text-[13px] font-medium text-[#4E5968]">계좌 유형
+        <select name="kind" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px] outline-none focus:border-[#3182F6]">
+          <option value="checking">입출금</option>
+          <option value="parking">파킹</option>
+          <option value="brokerage">증권 예수금</option>
+        </select>
+      </label>
+      <label class="block text-[13px] font-medium text-[#4E5968]">현재 잔액<input name="balance" required inputmode="numeric" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px] outline-none focus:border-[#3182F6]" placeholder="1500000"></label>
+      <label class="block text-[13px] font-medium text-[#4E5968]">계좌번호<input name="accountNumber" maxlength="30" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px] outline-none focus:border-[#3182F6]" placeholder="선택"></label>
+    </div>
+    <div class="mt-6 flex justify-end gap-2">
+      <button type="button" class="rounded-full px-4 py-2 text-[14px] font-semibold text-[#4E5968]" data-close-dialog>취소</button>
+      <button type="submit" class="rounded-full bg-[#3182F6] px-4 py-2 text-[14px] font-semibold text-white">저장</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dialog-deposit" class="w-[min(calc(100%-2rem),440px)] max-h-[90vh] overflow-y-auto rounded-[20px] border-0 p-0 shadow-xl">
+  <form data-editor method="post" action="/assets/deposits" class="p-6" autocomplete="off">
+    <h2 class="text-[18px] font-bold">예금 <span data-mode>등록</span></h2>
+    <div class="mt-5 space-y-4">
+      <label class="block text-[13px] font-medium text-[#4E5968]">은행명<input name="bankName" required maxlength="30" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px]"></label>
+      <label class="block text-[13px] font-medium text-[#4E5968]">상품명<input name="productName" required maxlength="40" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px]"></label>
+      <label class="block text-[13px] font-medium text-[#4E5968]">원금<input name="principal" required inputmode="numeric" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px]"></label>
+      <label class="block text-[13px] font-medium text-[#4E5968]">연 이율 (%)<input name="annualRate" required inputmode="decimal" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px]" placeholder="3.5"></label>
+      <label class="block text-[13px] font-medium text-[#4E5968]">가입일<input name="openedAt" type="date" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px]"></label>
+      <label class="block text-[13px] font-medium text-[#4E5968]">만기일<input name="maturityDate" type="date" required class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px]"></label>
+    </div>
+    <div class="mt-6 flex justify-end gap-2">
+      <button type="button" class="rounded-full px-4 py-2 text-[14px] font-semibold text-[#4E5968]" data-close-dialog>취소</button>
+      <button type="submit" class="rounded-full bg-[#3182F6] px-4 py-2 text-[14px] font-semibold text-white">저장</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dialog-savings" class="w-[min(calc(100%-2rem),440px)] max-h-[90vh] overflow-y-auto rounded-[20px] border-0 p-0 shadow-xl">
+  <form data-editor method="post" action="/assets/savings" class="p-6" autocomplete="off">
+    <h2 class="text-[18px] font-bold">적금 <span data-mode>등록</span></h2>
+    <div class="mt-5 space-y-4">
+      <label class="block text-[13px] font-medium text-[#4E5968]">은행명<input name="bankName" required maxlength="30" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px]"></label>
+      <label class="block text-[13px] font-medium text-[#4E5968]">상품명<input name="productName" required maxlength="40" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px]"></label>
+      <label class="block text-[13px] font-medium text-[#4E5968]">현재 누적액<input name="accumulated" required inputmode="numeric" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px]"></label>
+      <label class="block text-[13px] font-medium text-[#4E5968]">월 납입액<input name="monthlyAmount" required inputmode="numeric" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px]"></label>
+      <label class="block text-[13px] font-medium text-[#4E5968]">자동이체일<input name="autoTransferDay" required inputmode="numeric" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px]" placeholder="1–31"></label>
+      <label class="block text-[13px] font-medium text-[#4E5968]">자동이체 계좌
+        <select name="autoTransferAccountId" required class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px]">
+          <% assets.accountOptions.forEach((option) => { %>
+            <option value="<%= option.id %>"><%= option.label %></option>
+          <% }) %>
+        </select>
+      </label>
+      <label class="block text-[13px] font-medium text-[#4E5968]">가입일<input name="openedAt" type="date" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px]"></label>
+      <label class="block text-[13px] font-medium text-[#4E5968]">만기일<input name="maturityDate" type="date" required class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px]"></label>
+    </div>
+    <div class="mt-6 flex justify-end gap-2">
+      <button type="button" class="rounded-full px-4 py-2 text-[14px] font-semibold text-[#4E5968]" data-close-dialog>취소</button>
+      <button type="submit" class="rounded-full bg-[#3182F6] px-4 py-2 text-[14px] font-semibold text-white">저장</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dialog-stock" class="w-[min(calc(100%-2rem),440px)] max-h-[90vh] overflow-y-auto rounded-[20px] border-0 p-0 shadow-xl">
+  <form data-editor method="post" action="/assets/stocks" class="p-6" autocomplete="off">
+    <h2 class="text-[18px] font-bold">주식 <span data-mode>등록</span></h2>
+    <div class="mt-5 space-y-4">
+      <label class="block text-[13px] font-medium text-[#4E5968]">종목명<input name="name" required maxlength="40" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px]"></label>
+      <label class="block text-[13px] font-medium text-[#4E5968]">티커<input name="ticker" required maxlength="12" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px]" placeholder="005930 또는 AAPL"></label>
+      <label class="block text-[13px] font-medium text-[#4E5968]">통화
+        <select name="currency" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px]">
+          <option value="KRW">KRW</option>
+          <option value="USD">USD</option>
+        </select>
+      </label>
+      <label class="block text-[13px] font-medium text-[#4E5968]">보유 수량<input name="quantity" required inputmode="decimal" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px]"></label>
+      <label class="block text-[13px] font-medium text-[#4E5968]">평균 매입가<input name="averagePrice" required inputmode="decimal" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px]"></label>
+      <label class="block text-[13px] font-medium text-[#4E5968]">현재 평가액<input name="currentValue" required inputmode="decimal" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px]"></label>
+    </div>
+    <p class="mt-3 text-[12px] leading-5 text-[#8B95A1]">평가액은 해당 통화의 총액입니다. 저장하면 평가손익과 수익률이 다시 계산됩니다.</p>
+    <div class="mt-6 flex justify-end gap-2">
+      <button type="button" class="rounded-full px-4 py-2 text-[14px] font-semibold text-[#4E5968]" data-close-dialog>취소</button>
+      <button type="submit" class="rounded-full bg-[#3182F6] px-4 py-2 text-[14px] font-semibold text-white">저장</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dialog-card" class="w-[min(calc(100%-2rem),440px)] max-h-[90vh] overflow-y-auto rounded-[20px] border-0 p-0 shadow-xl">
+  <form data-editor method="post" action="/assets/cards" class="p-6" autocomplete="off">
+    <h2 class="text-[18px] font-bold">카드 <span data-mode>등록</span></h2>
+    <div class="mt-5 space-y-4">
+      <label class="block text-[13px] font-medium text-[#4E5968]">카드사<input name="issuer" required maxlength="30" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px]"></label>
+      <label class="block text-[13px] font-medium text-[#4E5968]">카드명<input name="name" required maxlength="30" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px]"></label>
+      <label class="block text-[13px] font-medium text-[#4E5968]">종류
+        <select name="type" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px]">
+          <option value="credit">신용카드</option>
+          <option value="debit">체크카드</option>
+        </select>
+      </label>
+      <label class="block text-[13px] font-medium text-[#4E5968]">끝 네 자리<input name="lastFour" inputmode="numeric" maxlength="4" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px]" placeholder="선택"></label>
+      <div data-credit-only>
+        <label class="block text-[13px] font-medium text-[#4E5968]">미결제 대금<input name="unpaidAmount" inputmode="numeric" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px]" value="0"></label>
+      </div>
+      <label class="block text-[13px] font-medium text-[#4E5968]">실적 기준액<input name="performanceThreshold" required inputmode="numeric" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px]" value="0"></label>
+      <label class="block text-[13px] font-medium text-[#4E5968]">결제일<input name="paymentDay" inputmode="numeric" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px]" placeholder="선택, 1–31"></label>
+      <div data-debit-only hidden>
+        <label class="block text-[13px] font-medium text-[#4E5968]">연결 계좌
+          <select name="linkedAccountId" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px]">
+            <option value="">선택</option>
+            <% assets.accountOptions.forEach((option) => { %>
+              <option value="<%= option.id %>"><%= option.label %></option>
+            <% }) %>
+          </select>
+        </label>
+      </div>
+    </div>
+    <div class="mt-6 flex justify-end gap-2">
+      <button type="button" class="rounded-full px-4 py-2 text-[14px] font-semibold text-[#4E5968]" data-close-dialog>취소</button>
+      <button type="submit" class="rounded-full bg-[#3182F6] px-4 py-2 text-[14px] font-semibold text-white">저장</button>
+    </div>
+  </form>
+</dialog>
+
+<script id="asset-records" type="application/json"><%- safeJson(assets.records) %></script>
+<script src="/js/assets.js"></script>
+<%- include('partials/close') %>

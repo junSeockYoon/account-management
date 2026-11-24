@@ -1,0 +1,184 @@
+<%- include('partials/open') %>
+<% const toneClass = { up: 'text-[#F04452]', down: 'text-[#3182F6]', flat: 'text-[#4E5968]' }; %>
+<% const weekdayClass = { sun: 'text-[#F04452]', sat: 'text-[#3182F6]', day: 'text-[#191F28]' }; %>
+<% const field = 'mt-1 w-full rounded-xl border border-[#E5E8EB] bg-white px-3 py-3 text-[15px] outline-none focus:border-[#3182F6]'; %>
+
+<% if (page.error) { %>
+  <p class="mb-4 rounded-2xl bg-[#FFF1F1] px-4 py-3 text-[14px] font-medium text-[#F04452]" role="alert"><%= page.error %></p>
+<% } %>
+<% if (page.notice) { %>
+  <p class="mb-4 rounded-2xl bg-[#E8F8F3] px-4 py-3 text-[14px] font-medium text-[#087F5B]" role="status"><%= page.notice %></p>
+<% } %>
+
+<section id="tx-entry" data-as-of="<%= page.asOf %>" class="rounded-[20px] border border-[#E5E8EB] bg-white p-6">
+  <form data-editor method="post" action="/transactions" autocomplete="off">
+    <h2 class="text-[17px] font-bold">소비 <span data-mode>입력</span></h2>
+    <p class="mt-1 text-[13px] leading-5 text-[#8B95A1]">금액과 날짜를 적고 저장하면 목록과 리포트에 반영됩니다. 체크·현금은 계좌 잔액이 줄고, 신용카드는 미결제만 늘어납니다.</p>
+    <div class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <label class="block text-[13px] font-medium text-[#4E5968]">금액<input name="amount" required inputmode="numeric" class="<%= field %>" placeholder="12000"></label>
+      <label class="block text-[13px] font-medium text-[#4E5968]">날짜<input name="date" type="date" required value="<%= page.asOf %>" class="<%= field %>"></label>
+      <label class="block text-[13px] font-medium text-[#4E5968]">유형
+        <select name="type" class="<%= field %>">
+          <option value="expense" selected>지출</option>
+          <option value="income">수입</option>
+          <option value="transfer">이체</option>
+        </select>
+      </label>
+      <div data-for="payment">
+        <label class="block text-[13px] font-medium text-[#4E5968]">결제 수단
+          <select name="paymentMethod" class="<%= field %>">
+            <option value="card" selected>카드</option>
+            <option value="account">계좌</option>
+            <option value="cash">현금</option>
+          </select>
+        </label>
+      </div>
+      <div data-for="card">
+        <label class="block text-[13px] font-medium text-[#4E5968]">카드
+          <select name="cardId" class="<%= field %>">
+            <% page.cards.forEach((item) => { %>
+              <option value="<%= item.id %>"><%= item.label %></option>
+            <% }) %>
+          </select>
+        </label>
+      </div>
+      <div data-for="account" hidden>
+        <label class="block text-[13px] font-medium text-[#4E5968]"><span data-account-label>출금 계좌</span>
+          <select name="accountId" class="<%= field %>">
+            <% page.accounts.forEach((item) => { %>
+              <option value="<%= item.id %>"><%= item.label %></option>
+            <% }) %>
+          </select>
+        </label>
+      </div>
+      <div data-for="destination" hidden>
+        <label class="block text-[13px] font-medium text-[#4E5968]">입금 대상
+          <select name="toAsset" class="<%= field %>">
+            <% page.targets.forEach((item) => { %>
+              <option value="<%= item.value %>"><%= item.label %></option>
+            <% }) %>
+          </select>
+        </label>
+      </div>
+      <label class="block text-[13px] font-medium text-[#4E5968]">카테고리
+        <select name="categoryId" class="<%= field %>">
+          <% page.categories.forEach((item) => { %>
+            <option value="<%= item.id %>" data-group="<%= item.group %>"><%= item.name %></option>
+          <% }) %>
+        </select>
+      </label>
+      <div data-for="class">
+        <label class="block text-[13px] font-medium text-[#4E5968]">고정/변동
+          <select name="expenseClass" class="<%= field %>">
+            <option value="variable" selected>변동비</option>
+            <option value="fixed">고정비</option>
+          </select>
+        </label>
+      </div>
+      <label class="block text-[13px] font-medium text-[#4E5968] sm:col-span-2">메모<input name="memo" maxlength="80" class="<%= field %>" placeholder="점심, 커피처럼 짧게"></label>
+    </div>
+    <div class="mt-5 flex justify-end gap-2">
+      <button type="button" class="rounded-full px-4 py-2 text-[14px] font-semibold text-[#4E5968]" data-tx-cancel hidden>취소</button>
+      <button type="submit" class="rounded-full bg-[#3182F6] px-4 py-2 text-[14px] font-semibold text-white">저장</button>
+    </div>
+  </form>
+</section>
+
+<section class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3" aria-label="조회 합계">
+  <article class="rounded-[20px] border border-[#E5E8EB] bg-white px-5 py-4">
+    <p class="text-[13px] text-[#6B7684]">지출</p>
+    <p class="mt-1 text-[22px] font-bold tabular-nums text-[#3182F6]"><%= page.totals.expenseText %></p>
+  </article>
+  <article class="rounded-[20px] border border-[#E5E8EB] bg-white px-5 py-4">
+    <p class="text-[13px] text-[#6B7684]">수입</p>
+    <p class="mt-1 text-[22px] font-bold tabular-nums text-[#F04452]"><%= page.totals.incomeText %></p>
+  </article>
+  <article class="rounded-[20px] border border-[#E5E8EB] bg-white px-5 py-4">
+    <p class="text-[13px] text-[#6B7684]">이체 <span class="text-[#8B95A1]">지출 제외</span></p>
+    <p class="mt-1 text-[22px] font-bold tabular-nums"><%= page.totals.transferText %></p>
+  </article>
+</section>
+
+<section class="mt-4 rounded-[20px] border border-[#E5E8EB] bg-white p-4 sm:p-6" aria-label="<%= page.calendar.label %> 달력">
+  <div class="flex items-center justify-between gap-3">
+    <% if (page.calendar.prevHref) { %>
+      <a href="<%= page.calendar.prevHref %>" class="rounded-full px-3 py-1.5 text-[13px] font-semibold text-[#4E5968] hover:bg-[#F2F4F6]">이전</a>
+    <% } else { %><span></span><% } %>
+    <h2 class="text-[17px] font-bold"><%= page.calendar.label %></h2>
+    <% if (page.calendar.nextHref) { %>
+      <a href="<%= page.calendar.nextHref %>" class="rounded-full px-3 py-1.5 text-[13px] font-semibold text-[#4E5968] hover:bg-[#F2F4F6]">다음</a>
+    <% } else { %><span></span><% } %>
+  </div>
+  <p class="mt-1 text-center text-[12px] text-[#8B95A1]">파랑은 지출, 빨강은 수입입니다. 이체는 빠집니다.</p>
+  <div class="mt-4 grid grid-cols-7 gap-1 text-center">
+    <% page.calendar.weekdays.forEach((name, index) => { %>
+      <div class="pb-1 text-[12px] font-semibold <%= index === 0 ? 'text-[#F04452]' : index === 6 ? 'text-[#3182F6]' : 'text-[#8B95A1]' %>"><%= name %></div>
+    <% }) %>
+    <% page.calendar.cells.forEach((cell) => { %>
+      <% if (cell.blank) { %>
+        <div></div>
+      <% } else { %>
+        <a
+          href="<%= cell.href %>"
+          class="flex min-h-16 flex-col rounded-xl px-0.5 py-1 <%= cell.selected ? 'bg-[#E8F3FF]' : 'hover:bg-[#F9FAFB]' %> <%= cell.today ? 'ring-1 ring-[#3182F6]' : '' %>"
+          <% if (cell.selected) { %>aria-current="date"<% } %>
+        >
+          <span class="text-[13px] font-semibold <%= cell.future ? 'text-[#B0B8C1]' : weekdayClass[cell.weekdayTone] %>"><%= cell.day %></span>
+          <% if (cell.expenseText) { %><span class="truncate text-[10px] font-medium leading-4 text-[#3182F6] tabular-nums">-<%= cell.expenseText %></span><% } %>
+          <% if (cell.incomeText) { %><span class="truncate text-[10px] font-medium leading-4 text-[#F04452] tabular-nums">+<%= cell.incomeText %></span><% } %>
+        </a>
+      <% } %>
+    <% }) %>
+  </div>
+</section>
+
+<form method="get" action="/transactions" class="mt-5 flex flex-col gap-2 sm:flex-row">
+  <select name="month" class="rounded-xl border border-[#E5E8EB] bg-white px-3 py-3 text-[14px]" aria-label="월">
+    <option value="all" <%= page.month === 'all' ? 'selected' : '' %>>전체 기간</option>
+    <% page.months.forEach((item) => { %>
+      <option value="<%= item.value %>" <%= page.month === item.value ? 'selected' : '' %>><%= item.label %></option>
+    <% }) %>
+  </select>
+  <select name="type" class="rounded-xl border border-[#E5E8EB] bg-white px-3 py-3 text-[14px]" aria-label="유형">
+    <% page.types.forEach((item) => { %>
+      <option value="<%= item.value %>" <%= page.type === item.value ? 'selected' : '' %>><%= item.label %></option>
+    <% }) %>
+  </select>
+  <input name="q" value="<%= page.q %>" maxlength="40" placeholder="메모, 카테고리, 카드, 계좌" class="min-w-0 flex-1 rounded-xl border border-[#E5E8EB] bg-white px-3 py-3 text-[14px] outline-none focus:border-[#3182F6]" aria-label="검색">
+  <button type="submit" class="rounded-full bg-white px-4 py-3 text-[14px] font-semibold text-[#4E5968]">조회</button>
+</form>
+
+<p class="mb-3 mt-6 text-[13px] text-[#8B95A1]">
+  <%= page.dayLabel || '이 조건' %> · <%= page.totals.count %>건
+  <% if (page.clearDayHref) { %><a href="<%= page.clearDayHref %>" class="ml-2 font-semibold text-[#3182F6]">달 전체</a><% } %>
+</p>
+
+<% if (page.rows.length === 0) { %>
+  <p class="rounded-[20px] border border-[#E5E8EB] bg-white px-6 py-12 text-center text-[14px] text-[#8B95A1]">조건에 맞는 거래가 없습니다.</p>
+<% } else { %>
+  <ul class="divide-y divide-[#F2F4F6] overflow-hidden rounded-[20px] border border-[#E5E8EB] bg-white">
+    <% page.rows.forEach((item) => { %>
+      <li class="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div class="min-w-0">
+          <p class="text-[12px] text-[#8B95A1]"><%= item.dateText %> · <%= item.typeLabel %><% if (item.classLabel) { %> · <%= item.classLabel %><% } %></p>
+          <p class="mt-1 truncate font-semibold"><%= item.categoryName %><% if (item.memo) { %> · <%= item.memo %><% } %></p>
+          <p class="mt-1 truncate text-[13px] text-[#4E5968]"><%= item.where %></p>
+        </div>
+        <div class="flex items-center justify-between gap-3 sm:justify-end">
+          <p class="text-[16px] font-bold tabular-nums sm:text-right <%= toneClass[item.tone] %>"><%= item.amountText %></p>
+          <div class="flex shrink-0 items-center gap-2">
+            <button type="button" class="rounded-full px-3 py-1.5 text-[13px] font-semibold text-[#3182F6] hover:bg-[#E8F3FF]" data-tx-action="edit" data-tx-id="<%= item.id %>">수정</button>
+            <form method="post" action="/transactions/<%= item.id %>/delete" data-confirm="<%= item.confirmLabel %>">
+              <input type="hidden" name="month" value="<%= page.month %>">
+              <button type="submit" class="rounded-full px-3 py-1.5 text-[13px] font-semibold text-[#F04452] hover:bg-[#FFF1F1]">삭제</button>
+            </form>
+          </div>
+        </div>
+      </li>
+    <% }) %>
+  </ul>
+<% } %>
+
+<script id="tx-records" type="application/json"><%- safeJson(page.records) %></script>
+<script src="/js/transactions.js"></script>
+<%- include('partials/close') %>
