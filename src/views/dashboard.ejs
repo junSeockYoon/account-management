@@ -91,10 +91,10 @@
 </section>
 
 <section class="mt-4 rounded-[20px] border border-[#E5E8EB] bg-white p-6">
-  <h2 class="text-[17px] font-bold">예·적금 만기 알림</h2>
+  <h2 class="text-[17px] font-bold">예·적금·청약 만기</h2>
   <p class="mt-1 text-[13px] text-[#8B95A1]">만기일이 가까운 순서입니다</p>
   <% if (dashboard.maturities.length === 0) { %>
-    <p class="mt-8 text-[14px] text-[#8B95A1]">등록된 예금과 적금이 없습니다.</p>
+    <p class="mt-8 text-[14px] text-[#8B95A1]">등록된 예금, 적금, 청약이 없습니다.</p>
   <% } else { %>
     <ul class="mt-4 divide-y divide-[#F2F4F6]">
       <% dashboard.maturities.forEach((item) => { %>

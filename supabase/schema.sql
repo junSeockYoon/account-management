@@ -59,16 +59,19 @@ create table public.savings (
   user_id uuid not null references auth.users (id) on delete cascade,
   bank_name text not null,
   product_name text not null,
+  product_kind text not null default 'installment' check (product_kind in ('installment', 'housing')),
   accumulated bigint not null default 0 check (accumulated >= 0),
   monthly_amount bigint not null check (monthly_amount >= 0),
+  annual_rate numeric(5, 2) not null default 0 check (annual_rate >= 0 and annual_rate <= 30),
   auto_transfer_day smallint not null check (auto_transfer_day between 1 and 31),
   auto_transfer_account_id uuid not null,
   opened_on date,
-  maturity_on date not null,
+  maturity_on date,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (user_id, id),
-  foreign key (user_id, auto_transfer_account_id) references public.accounts (user_id, id) on delete restrict
+  foreign key (user_id, auto_transfer_account_id) references public.accounts (user_id, id) on delete restrict,
+  constraint savings_maturity check (product_kind = 'housing' or maturity_on is not null)
 );
 
 create table public.stocks (

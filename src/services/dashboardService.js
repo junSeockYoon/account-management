@@ -44,7 +44,7 @@ function buildPortfolio(cash, safe, investment) {
     {
       key: 'safe',
       name: '안전자산',
-      description: '예금·적금',
+      description: '예금·적금·청약',
       amount: safe,
       color: '#12B886',
     },
@@ -107,9 +107,9 @@ function buildMaturities(deposits, savings, asOf) {
       date: item.maturityDate,
       amount: item.principal,
     })),
-    ...savings.map((item) => ({
+    ...savings.filter((item) => item.maturityDate).map((item) => ({
       id: item.id,
-      kind: '적금',
+      kind: item.productKind === 'housing' ? '청약' : '적금',
       bankName: item.bankName,
       name: item.productName,
       date: item.maturityDate,

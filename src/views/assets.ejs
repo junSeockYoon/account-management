@@ -101,19 +101,19 @@
 <section class="mt-4 <%= assets.activeTab === 'savings' ? '' : 'hidden' %>">
   <div class="mb-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
     <div>
-      <h2 class="text-[17px] font-bold">적금</h2>
+      <h2 class="text-[17px] font-bold">적금·청약</h2>
       <p class="mt-1 text-[13px] text-[#8B95A1]">누적액 합계 <%= assets.totals.savingsText %></p>
     </div>
-    <button type="button" class="rounded-full bg-[#3182F6] px-4 py-2 text-[14px] font-semibold text-white" data-asset-action="create" data-asset-type="savings">적금 등록</button>
+    <button type="button" class="rounded-full bg-[#3182F6] px-4 py-2 text-[14px] font-semibold text-white" data-asset-action="create" data-asset-type="savings">등록</button>
   </div>
   <% if (assets.savings.length === 0) { %>
-    <p class="rounded-[20px] border border-[#E5E8EB] bg-white px-6 py-12 text-center text-[14px] text-[#8B95A1]">등록된 적금이 없습니다.</p>
+    <p class="rounded-[20px] border border-[#E5E8EB] bg-white px-6 py-12 text-center text-[14px] text-[#8B95A1]">등록된 적금이나 청약 통장이 없습니다.</p>
   <% } else { %>
     <ul class="divide-y divide-[#F2F4F6] overflow-hidden rounded-[20px] border border-[#E5E8EB] bg-white">
       <% assets.savings.forEach((item) => { %>
         <li class="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div class="min-w-0">
-            <p class="text-[12px] text-[#8B95A1]"><%= item.bankName %></p>
+            <p class="text-[12px] text-[#8B95A1]"><%= item.bankName %> · <%= item.kindLabel %><% if (item.rateText) { %> · 연 <%= item.rateText %><% } %></p>
             <p class="mt-1 truncate font-semibold"><%= item.name %></p>
             <p class="mt-1 text-[13px] text-[#4E5968]">월 <%= item.monthlyText %> · <%= item.transferText %></p>
             <p class="mt-1 text-[13px] text-[#8B95A1]">만기 <%= item.dateLabel %></p>
@@ -251,12 +251,19 @@
 
 <dialog id="dialog-savings" class="w-[min(calc(100%-2rem),440px)] max-h-[90vh] overflow-y-auto rounded-[20px] border-0 p-0 shadow-xl">
   <form data-editor method="post" action="/assets/savings" class="p-6" autocomplete="off">
-    <h2 class="text-[18px] font-bold">적금 <span data-mode>등록</span></h2>
+    <h2 class="text-[18px] font-bold">적금·청약 <span data-mode>등록</span></h2>
     <div class="mt-5 space-y-4">
+      <label class="block text-[13px] font-medium text-[#4E5968]">종류
+        <select name="productKind" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px] outline-none focus:border-[#3182F6]">
+          <option value="installment">적금</option>
+          <option value="housing">청약</option>
+        </select>
+      </label>
       <label class="block text-[13px] font-medium text-[#4E5968]">은행명<input name="bankName" required maxlength="30" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px]"></label>
       <label class="block text-[13px] font-medium text-[#4E5968]">상품명<input name="productName" required maxlength="40" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px]"></label>
       <label class="block text-[13px] font-medium text-[#4E5968]">현재 누적액<input name="accumulated" required inputmode="numeric" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px]"></label>
       <label class="block text-[13px] font-medium text-[#4E5968]">월 납입액<input name="monthlyAmount" required inputmode="numeric" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px]"></label>
+      <label class="block text-[13px] font-medium text-[#4E5968]">연 이율 (%)<input name="annualRate" required inputmode="decimal" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px]" placeholder="3.5"></label>
       <label class="block text-[13px] font-medium text-[#4E5968]">자동이체일<input name="autoTransferDay" required inputmode="numeric" class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px]" placeholder="1–31"></label>
       <label class="block text-[13px] font-medium text-[#4E5968]">자동이체 계좌
         <select name="autoTransferAccountId" required class="mt-1 w-full rounded-xl border border-[#E5E8EB] px-3 py-3 text-[15px]">

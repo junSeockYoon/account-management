@@ -53,6 +53,17 @@
     if (creditFields) creditFields.hidden = debit;
   }
 
+  function toggleSavings(form) {
+    const kind = form.elements.namedItem('productKind');
+    const maturity = form.elements.namedItem('maturityDate');
+    if (!kind || !maturity) return;
+    const housing = kind.value === 'housing';
+    maturity.required = !housing;
+    const label = maturity.closest('label');
+    const text = label && [...label.childNodes].find((node) => node.nodeType === 3);
+    if (text) text.textContent = housing ? '만기일 (선택)' : '만기일';
+  }
+
   function openDialog(type, id) {
     const config = types[type];
     const dialog = document.getElementById(config.dialogId);
@@ -78,9 +89,11 @@
       if (form.elements.namedItem('kind')) form.elements.kind.value = 'checking';
       if (form.elements.namedItem('currency')) form.elements.currency.value = 'KRW';
       if (form.elements.namedItem('type')) form.elements.type.value = 'credit';
+      if (form.elements.namedItem('productKind')) form.elements.productKind.value = 'installment';
     }
 
     toggleCard(form);
+    toggleSavings(form);
     dialog.showModal();
   }
 
@@ -109,6 +122,10 @@
     const typeField = dialog.querySelector('[name="type"]');
     if (typeField) {
       typeField.addEventListener('change', () => toggleCard(typeField.form));
+    }
+    const kindField = dialog.querySelector('[name="productKind"]');
+    if (kindField) {
+      kindField.addEventListener('change', () => toggleSavings(kindField.form));
     }
   });
 })();

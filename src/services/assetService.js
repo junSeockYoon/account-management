@@ -29,7 +29,7 @@ const {
 const TABS = [
   { id: 'accounts', label: '입출금' },
   { id: 'deposits', label: '예금' },
-  { id: 'savings', label: '적금' },
+  { id: 'savings', label: '적금·청약' },
   { id: 'stocks', label: '주식' },
   { id: 'cards', label: '부채/카드' },
 ];
@@ -128,24 +128,28 @@ function parseDeposit(body, current) {
 function parseSavings(body, current) {
   const bankName = form.text(body.bankName, 30);
   const productName = form.text(body.productName, 40);
+  const productKind = form.oneOf(body.productKind, ['installment', 'housing']);
   const accumulated = form.integerAmount(body.accumulated);
   const monthlyAmount = form.integerAmount(body.monthlyAmount);
+  const annualRate = form.decimalAmount(body.annualRate, { min: 0, max: 30, scale: 2 });
   const autoTransferDay = form.dayOfMonth(body.autoTransferDay);
-  const maturityDate = form.isoDate(body.maturityDate);
+  const maturityDate = form.optionalIsoDate(body.maturityDate);
   const openedAt = form.optionalIsoDate(body.openedAt);
   const autoTransferAccountId = String(body.autoTransferAccountId ?? '').trim();
-  if (!bankName || !productName || accumulated == null || monthlyAmount == null || autoTransferDay == null) {
-    return null;
-  }
-  if (!maturityDate || openedAt == null || !accountRepository.findById(autoTransferAccountId)) return null;
+  if (!bankName || !productName || !productKind || accumulated == null || monthlyAmount == null) return null;
+  if (annualRate == null || autoTransferDay == null || maturityDate == null || openedAt == null) return null;
+  if (productKind !== 'housing' && !maturityDate) return null;
+  if (!accountRepository.findById(autoTransferAccountId)) return null;
   return {
     bankName,
     productName,
+    productKind,
     accumulated,
     monthlyAmount,
+    annualRate,
     autoTransferDay,
     autoTransferAccountId,
-    maturityDate,
+    maturityDate: maturityDate || null,
     openedAt: openedAt || current?.openedAt || metaRepository.getAsOf(),
   };
 }
@@ -382,6 +386,7 @@ async function deleteCard(id) {
 }
 
 function maturityView(date, asOf) {
+  if (!date) return { dateLabel: '만기 없음', ddayLabel: '', urgent: false };
   const days = diffDays(asOf, date);
   return {
     dateLabel: date.replace(/-/g, '.'),
@@ -434,20 +439,24 @@ function presentSavings(asOf) {
     id: item.id,
     bankName: item.bankName,
     name: item.productName,
+    kindLabel: item.productKind === 'housing' ? '청약' : '적금',
     accumulatedText: formatKRW(item.accumulated),
     monthlyText: formatKRW(item.monthlyAmount),
+    rateText: item.annualRate == null ? '' : formatAnnualRate(item.annualRate),
     transferText: `매월 ${item.autoTransferDay}일 · ${accountLabel(item.autoTransferAccountId)}`,
     label: `${item.bankName} ${item.productName}`,
     ...maturityView(item.maturityDate, asOf),
     form: {
       bankName: item.bankName,
       productName: item.productName,
+      productKind: item.productKind === 'housing' ? 'housing' : 'installment',
       accumulated: item.accumulated,
       monthlyAmount: item.monthlyAmount,
+      annualRate: item.annualRate ?? '',
       autoTransferDay: item.autoTransferDay,
       autoTransferAccountId: item.autoTransferAccountId,
       openedAt: item.openedAt || '',
-      maturityDate: item.maturityDate,
+      maturityDate: item.maturityDate || '',
     },
   }));
 }
