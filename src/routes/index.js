@@ -33,6 +33,7 @@ router.post('/assets/savings', guard(assetController.createSavings));
 router.post('/assets/savings/:id/update', guard(assetController.updateSavings));
 router.post('/assets/savings/:id/delete', guard(assetController.deleteSavings));
 router.post('/assets/stocks', guard(assetController.createStock));
+router.post('/assets/stocks/refresh', guard(assetController.refreshStocks));
 router.post('/assets/stocks/:id/update', guard(assetController.updateStock));
 router.post('/assets/stocks/:id/delete', guard(assetController.deleteStock));
 router.post('/assets/cards', guard(assetController.createCard));

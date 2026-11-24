@@ -140,7 +140,12 @@
         <span class="font-semibold <%= toneClass[assets.totals.profitDirection] %>"><%= assets.totals.profitText %></span>
       </p>
     </div>
-    <button type="button" class="rounded-full bg-[#3182F6] px-4 py-2 text-[14px] font-semibold text-white" data-asset-action="create" data-asset-type="stock">종목 등록</button>
+    <div class="flex flex-wrap gap-2">
+      <form method="post" action="/assets/stocks/refresh">
+        <button type="submit" class="rounded-full border border-[#E5E8EB] bg-white px-4 py-2 text-[14px] font-semibold text-[#4E5968]">시세 새로고침</button>
+      </form>
+      <button type="button" class="rounded-full bg-[#3182F6] px-4 py-2 text-[14px] font-semibold text-white" data-asset-action="create" data-asset-type="stock">종목 등록</button>
+    </div>
   </div>
   <p class="mb-3 text-[12px] text-[#8B95A1]">수익률은 1주 현재가와 평균 매입가를 비교합니다. 평가액은 수량 × 현재가입니다. <%= assets.fxLabel %></p>
   <% if (assets.stocks.length === 0) { %>
@@ -152,7 +157,7 @@
           <div class="min-w-0">
             <p class="text-[12px] text-[#8B95A1]"><%= item.ticker %> · <%= item.currency %></p>
             <p class="mt-1 truncate font-semibold"><%= item.name %></p>
-            <p class="mt-1 text-[13px] text-[#4E5968]"><%= item.quantityText %> · 평균 <%= item.averageText %> · 현재 <%= item.currentText %></p>
+            <p class="mt-1 text-[13px] text-[#4E5968]"><%= item.quantityText %> · 평균 <%= item.averageText %> · 현재 <%= item.currentText %><% if (item.updatedLabel) { %> · <%= item.updatedLabel %><% } %></p>
           </div>
           <div class="flex items-center justify-between gap-3 sm:justify-end">
             <div class="sm:text-right">

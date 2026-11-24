@@ -5,6 +5,9 @@ const stockRepository = require('../repositories/stockRepository');
 const cardRepository = require('../repositories/cardRepository');
 const transactionRepository = require('../repositories/transactionRepository');
 const metaRepository = require('../repositories/metaRepository');
+const db = require('../repositories/db');
+const { getState } = require('../repositories/store');
+const quotes = require('./marketQuote');
 const form = require('../utils/form');
 const {
   formatKRW,
@@ -49,6 +52,7 @@ const ERRORS = {
   'asset-in-use': '연결된 거래가 있어 삭제할 수 없습니다.',
   'card-in-use': '이 카드로 기록된 거래가 있어 삭제할 수 없습니다.',
   nouser: 'Supabase에 가입한 사용자가 없어 저장할 수 없습니다.',
+  'quote-failed': '시세와 환율을 가져오지 못했습니다. 잠시 후 다시 눌러 주세요.',
 };
 
 const KIND_LABELS = {
@@ -482,6 +486,7 @@ function presentStocks(usdRate) {
       quantityText: formatQuantity(stock.quantity),
       averageText: moneyText(stock.averagePrice, stock.currency),
       currentText: moneyText(stock.currentPrice, stock.currency),
+      updatedLabel: stock.priceUpdatedAt ? String(stock.priceUpdatedAt).slice(0, 10).replace(/-/g, '.') : '',
       valueText: moneyText(stock.currentValue, stock.currency),
       valueKrwText: stock.currency === 'USD' ? formatKRW(valueKrw) : '',
       profitText: signedMoneyText(profit, stock.currency),
@@ -528,7 +533,59 @@ function presentCards() {
   return cards.sort((a, b) => Number(b.isDebt) - Number(a.isDebt) || b.form.unpaidAmount - a.form.unpaidAmount);
 }
 
-function getAssetsPage({ tab, notice, error } = {}) {
+function quoteNotice({ notice, saved, missed, rate }) {
+  if (notice !== 'refreshed') return NOTICES[notice] || '';
+  const count = Number(saved) || 0;
+  const names = String(missed || '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter((item) => /^[A-Za-z0-9.-]{1,15}$/.test(item));
+  const rateNumber = Number(rate);
+  const rateText = rateNumber > 0
+    ? ` 환율은 1달러 = ${rateNumber.toLocaleString('ko-KR')}원입니다.`
+    : ' 환율은 가져오지 못했습니다.';
+  const missText = names.length ? ` 못 찾은 종목: ${names.join(', ')}.` : '';
+  return `${count}개 종목의 현재가를 갱신했습니다.${rateText}${missText}`;
+}
+
+function todaySeoul() {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul' }).format(new Date());
+}
+
+async function refreshQuotes() {
+  const stocks = stockRepository.findAll();
+  const rate = await quotes.usdKrw();
+  const today = todaySeoul();
+  const missed = [];
+  let saved = 0;
+
+  for (const stock of stocks) {
+    const price = await quotes.lastPrice(stock);
+    if (price == null) {
+      missed.push(stock.ticker);
+      continue;
+    }
+    stock.currentPrice = quotes.roundPrice(price, stock.currency);
+    stock.currentValue = quotes.positionValue(stock.quantity, stock.currentPrice, stock.currency);
+    stock.priceUpdatedAt = today;
+    await stockRepository.save(stock);
+    saved += 1;
+  }
+
+  if (rate && getState().userId) {
+    await db.updateProfileRate(getState().userId, rate);
+  }
+  if (!saved && !rate) return { ok: false, error: 'quote-failed' };
+  return {
+    ok: true,
+    notice: 'refreshed',
+    saved,
+    missed: missed.join(','),
+    rate: rate || '',
+  };
+}
+
+function getAssetsPage({ tab, notice, error, saved, missed, rate } = {}) {
   const activeTab = TABS.some((item) => item.id === tab) ? tab : 'accounts';
   const asOf = metaRepository.getAsOf();
   const usdRate = metaRepository.getFxRate().USD;
@@ -574,7 +631,7 @@ function getAssetsPage({ tab, notice, error } = {}) {
     stocks,
     cards,
     accountOptions: accountOptions(),
-    notice: NOTICES[notice] || '',
+    notice: quoteNotice({ notice, saved, missed, rate }),
     error: ERRORS[error] || '',
     records: {
       account: Object.fromEntries(accounts.map((item) => [item.id, item.form])),
@@ -600,6 +657,7 @@ module.exports = {
   createStock,
   updateStock,
   deleteStock,
+  refreshQuotes,
   createCard,
   updateCard,
   deleteCard,

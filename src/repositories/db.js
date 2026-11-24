@@ -294,8 +294,15 @@ async function update(table, item) {
   await rest(`${table}?id=eq.${encodeURIComponent(item.id)}`, null, { method: 'PATCH', body: fields });
 }
 
+async function updateProfileRate(userId, rate) {
+  await rest(`profiles?id=eq.${encodeURIComponent(userId)}`, null, {
+    method: 'PATCH',
+    body: { usd_rate: rate },
+  });
+}
+
 async function remove(table, id) {
   await rest(`${table}?id=eq.${encodeURIComponent(id)}`, null, { method: 'DELETE' });
 }
 
-module.exports = { fetchState, insert, update, remove };
+module.exports = { fetchState, insert, update, updateProfileRate, remove };

@@ -1,9 +1,13 @@
 const assetService = require('../services/assetService');
 
 function redirectTo(res, tab, result) {
-  const key = result.ok ? 'notice' : 'error';
-  const value = result.ok ? result.notice : result.error;
-  res.redirect(303, `/assets?tab=${tab}&${key}=${encodeURIComponent(value)}`);
+  const params = new URLSearchParams();
+  params.set('tab', tab);
+  params.set(result.ok ? 'notice' : 'error', result.ok ? result.notice : result.error);
+  if (result.saved != null) params.set('saved', String(result.saved));
+  if (result.missed) params.set('missed', result.missed);
+  if (result.rate) params.set('rate', String(result.rate));
+  res.redirect(303, `/assets?${params}`);
 }
 
 function show(req, res) {
@@ -13,6 +17,9 @@ function show(req, res) {
       tab: req.query.tab,
       notice: req.query.notice,
       error: req.query.error,
+      saved: req.query.saved,
+      missed: req.query.missed,
+      rate: req.query.rate,
     }),
   });
 }
@@ -65,6 +72,10 @@ async function deleteStock(req, res) {
   redirectTo(res, 'stocks', await assetService.deleteStock(req.params.id));
 }
 
+async function refreshStocks(req, res) {
+  redirectTo(res, 'stocks', await assetService.refreshQuotes());
+}
+
 async function createCard(req, res) {
   redirectTo(res, 'cards', await assetService.createCard(req.body));
 }
@@ -91,6 +102,7 @@ module.exports = {
   createStock,
   updateStock,
   deleteStock,
+  refreshStocks,
   createCard,
   updateCard,
   deleteCard,
