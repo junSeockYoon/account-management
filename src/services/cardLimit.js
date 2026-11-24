@@ -1,6 +1,6 @@
 const { getState } = require('../repositories/store');
 const { updateMonthlyCardLimit } = require('../repositories/db');
-const { formatKRW, formatShare, formatMonthDay } = require('../utils/format');
+const { formatKRW, formatShare, formatMonthDay, monthStart } = require('../utils/format');
 const form = require('../utils/form');
 
 const MAX_LIMIT = 100000000;
@@ -16,21 +16,38 @@ function daysInMonth(year, month) {
   return new Date(year, month, 0).getDate();
 }
 
-function periodStart(asOf, cycleDay) {
-  const day = cycleDay >= 1 && cycleDay <= 31 ? cycleDay : 1;
-  const [year, month, date] = asOf.split('-').map(Number);
-  const thisLast = daysInMonth(year, month);
-  const thisDay = Math.min(day, thisLast);
-  if (date >= thisDay) {
-    return `${asOf.slice(0, 7)}-${String(thisDay).padStart(2, '0')}`;
+function isoDate(year, month, day) {
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+function shiftMonth(year, month, delta) {
+  const date = new Date(year, month - 1 + delta, 1);
+  return { year: date.getFullYear(), month: date.getMonth() + 1 };
+}
+
+function period(asOf, cycleDay) {
+  if (!(cycleDay >= 1 && cycleDay <= 31)) {
+    return { start: monthStart(asOf), end: asOf };
   }
-  const previous = new Date(year, month - 2, 1);
-  const previousYear = previous.getFullYear();
-  const previousMonth = previous.getMonth() + 1;
-  const previousDay = Math.min(day, daysInMonth(previousYear, previousMonth));
-  const monthText = String(previousMonth).padStart(2, '0');
-  const dayText = String(previousDay).padStart(2, '0');
-  return `${previousYear}-${monthText}-${dayText}`;
+  const [year, month, date] = asOf.split('-').map(Number);
+  let startYear = year;
+  let startMonth = month;
+  if (date < Math.min(cycleDay, daysInMonth(year, month))) {
+    const previous = shiftMonth(year, month, -1);
+    startYear = previous.year;
+    startMonth = previous.month;
+  }
+  const next = shiftMonth(startYear, startMonth, 1);
+  return {
+    start: isoDate(startYear, startMonth, Math.min(cycleDay, daysInMonth(startYear, startMonth))),
+    end: isoDate(next.year, next.month, Math.min(cycleDay, daysInMonth(next.year, next.month))),
+  };
+}
+
+function rangeLabel(start, end) {
+  const sameYear = start.slice(0, 4) === end.slice(0, 4);
+  if (sameYear) return `${formatMonthDay(start)}–${formatMonthDay(end)}`;
+  return `${start.slice(0, 4)}년 ${formatMonthDay(start)}–${end.slice(0, 4)}년 ${formatMonthDay(end)}`;
 }
 
 function spentOnCards(transactions, start, end) {
@@ -42,12 +59,12 @@ function spentOnCards(transactions, start, end) {
 }
 
 function present(transactions, asOf, limit, cycleDay) {
-  const start = periodStart(asOf, cycleDay);
+  const { start, end } = period(asOf, cycleDay);
   const spent = spentOnCards(transactions, start, asOf);
   const base = {
     spent,
     spentText: formatKRW(spent),
-    rangeLabel: `${formatMonthDay(start)}–${formatMonthDay(asOf)}`,
+    rangeLabel: rangeLabel(start, end),
     input: limit > 0 ? String(limit) : '',
     cycleInput: cycleDay >= 1 && cycleDay <= 31 ? String(cycleDay) : '',
   };

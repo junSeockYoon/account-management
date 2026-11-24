@@ -1,8 +1,8 @@
 <section class="mt-4 rounded-[20px] border border-[#E5E8EB] bg-white p-6">
   <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
     <div>
-      <h2 class="text-[17px] font-bold">이번 달 카드 한도</h2>
-      <p class="mt-1 text-[13px] text-[#8B95A1]"><%= budget.rangeLabel %> · 카드로 결제한 지출만 합산합니다. 기준일을 비우면 매월 1일부터입니다.</p>
+      <h2 class="text-[17px] font-bold">카드 사용 한도</h2>
+      <p class="mt-1 text-[13px] text-[#8B95A1]"><%= budget.rangeLabel %> · 카드 결제만 더합니다. 금액은 오늘까지이고, 기준일을 비우면 매월 1일부터 오늘까지입니다.</p>
     </div>
     <form method="post" action="/card-limit" class="flex flex-wrap items-end gap-2" autocomplete="off">
       <input type="hidden" name="next" value="<%= next %>">
@@ -16,7 +16,7 @@
     </form>
   </div>
   <% if (!budget.set) { %>
-    <p class="mt-5 text-[14px] text-[#4E5968]">한도를 정하면 이번 달 카드 사용 <span class="font-semibold tabular-nums"><%= budget.spentText %></span>과 비교합니다. 칸을 비우고 저장하면 한도가 지워집니다.</p>
+    <p class="mt-5 text-[14px] text-[#4E5968]">한도를 정하면 이 기간의 카드 사용 <span class="font-semibold tabular-nums"><%= budget.spentText %></span>과 비교합니다. 한도 칸을 비우고 저장하면 한도가 지워집니다.</p>
   <% } else { %>
     <div class="mt-5 flex items-end justify-between gap-3">
       <p class="text-[22px] font-bold tabular-nums"><%= budget.spentText %><span class="text-[14px] font-medium text-[#8B95A1]"> / <%= budget.limitText %></span></p>
