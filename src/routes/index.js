@@ -20,6 +20,7 @@ router.post('/logout', authController.logout);
 
 router.get('/', guard(dashboardController.home));
 router.post('/card-limit', guard(analyticsController.saveCardLimit));
+router.get('/transactions/new', guard(transactionController.entry));
 router.get('/transactions', guard(transactionController.show));
 router.post('/transactions', guard(transactionController.create));
 router.post('/recurring', guard(recurringController.create));

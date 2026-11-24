@@ -1,19 +1,17 @@
 (function () {
-  const root = document.getElementById('tx-entry');
-  const dataEl = document.getElementById('tx-records');
-  if (!root || !dataEl) return;
-  const records = JSON.parse(dataEl.textContent);
-  const form = root.querySelector('[data-editor]');
-  const mode = root.querySelector('[data-mode]');
-  const cancel = root.querySelector('[data-tx-cancel]');
+  document.addEventListener('submit', (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLFormElement) || !target.hasAttribute('data-confirm')) return;
+    const label = target.getAttribute('data-confirm') || '이 거래';
+    if (!window.confirm(`${label} 항목을 삭제할까요?`)) event.preventDefault();
+  });
+})();
 
-  function fill(values) {
-    Object.entries(values).forEach(([key, value]) => {
-      const field = form.elements.namedItem(key);
-      if (!field) return;
-      field.value = value == null ? '' : String(value);
-    });
-  }
+(function () {
+  const root = document.getElementById('tx-entry');
+  if (!root) return;
+  const form = root.querySelector('[data-editor]');
+  if (!form) return;
 
   function sync() {
     const type = form.type.value;
@@ -39,47 +37,11 @@
     }
   }
 
-  function setCreate() {
-    form.reset();
-    form.action = '/transactions';
-    form.date.value = root.dataset.asOf;
-    form.type.value = 'expense';
-    form.paymentMethod.value = 'card';
-    form.expenseClass.value = 'variable';
-    form.categoryId.value = 'food';
-    mode.textContent = '입력';
-    cancel.hidden = true;
-    sync();
-  }
-
-  document.addEventListener('click', (event) => {
-    const edit = event.target.closest('[data-tx-action="edit"]');
-    if (edit) {
-      const values = records[edit.dataset.txId];
-      if (!values) return;
-      form.reset();
-      fill(values);
-      form.action = `/transactions/${encodeURIComponent(edit.dataset.txId)}/update`;
-      mode.textContent = '수정';
-      cancel.hidden = false;
-      sync();
-      root.scrollIntoView({ block: 'start' });
-      form.amount.focus();
-      return;
-    }
-    if (event.target.closest('[data-tx-cancel]')) setCreate();
-  });
-
-  document.addEventListener('submit', (event) => {
-    const target = event.target;
-    if (!(target instanceof HTMLFormElement) || !target.hasAttribute('data-confirm')) return;
-    const label = target.getAttribute('data-confirm') || '이 거래';
-    if (!window.confirm(`${label} 항목을 삭제할까요?`)) event.preventDefault();
-  });
-
   form.type.addEventListener('change', sync);
   form.paymentMethod.addEventListener('change', sync);
   sync();
+  const amount = form.elements.namedItem('amount');
+  if (amount && !amount.value) amount.focus();
 })();
 
 (function () {

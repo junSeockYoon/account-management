@@ -265,6 +265,64 @@ function apply(tx, sign) {
   return true;
 }
 
+function blankForm(asOf) {
+  const expense = categoryRepository.findAll().find((item) => item.group === 'expense');
+  return {
+    type: 'expense',
+    amount: '',
+    date: asOf,
+    paymentMethod: 'card',
+    cardId: '',
+    accountId: '',
+    toAsset: '',
+    categoryId: expense ? expense.id : '',
+    expenseClass: 'variable',
+    memo: '',
+  };
+}
+
+function formChoices(index) {
+  return {
+    categories: categoryRepository.findAll().map((item) => ({
+      id: item.id,
+      name: item.name,
+      group: item.group,
+    })),
+    accounts: accountRepository.findAll().map((item) => ({ id: item.id, label: accountLabel(item) })),
+    cards: cardRepository.findAll().map((item) => ({
+      id: item.id,
+      label: `${item.issuer} ${item.name}`,
+    })),
+    targets: [
+      ...accountRepository.findAll().map((item) => ({
+        value: `account:${item.id}`,
+        label: accountLabel(item),
+      })),
+      ...savingsRepository.findAll().map((item) => ({
+        value: `savings:${item.id}`,
+        label: `${item.bankName} ${item.productName}`,
+      })),
+    ],
+    recurring: recurringRepository.findAll()
+      .map((item) => presentRecurring(item, index))
+      .sort((a, b) => a.chargeDay - b.chargeDay || a.title.localeCompare(b.title, 'ko')),
+  };
+}
+
+function getEntry(query) {
+  const asOf = metaRepository.getAsOf();
+  const index = indexes();
+  const tx = query.id ? transactionRepository.findById(query.id) : null;
+  return {
+    asOf,
+    editingId: tx ? tx.id : '',
+    form: tx ? decorate(tx, index).form : blankForm(asOf),
+    notice: NOTICES[query.notice] || '',
+    error: tx || !query.id ? (ERRORS[query.error] || '') : ERRORS.notfound,
+    ...formChoices(index),
+  };
+}
+
 function getPage(query) {
   const asOf = metaRepository.getAsOf();
   const transactions = transactionRepository.findAll();
@@ -530,4 +588,4 @@ async function setStatement(id, body) {
   return ok('statement', monthFrom(body));
 }
 
-module.exports = { getPage, create, update, remove, commitNew, setStatement };
+module.exports = { getPage, getEntry, create, update, remove, commitNew, setStatement };
