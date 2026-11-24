@@ -92,9 +92,20 @@
     <% page.rows.forEach((item) => { %>
       <li class="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div class="min-w-0">
-          <p class="text-[12px] text-[#8B95A1]"><%= item.dateText %> · <%= item.typeLabel %><% if (item.classLabel) { %> · <%= item.classLabel %><% } %></p>
-          <p class="mt-1 truncate font-semibold"><%= item.categoryName %><% if (item.memo) { %> · <%= item.memo %><% } %></p>
-          <p class="mt-1 truncate text-[13px] text-[#4E5968]"><%= item.where %></p>
+          <div class="flex flex-wrap items-center gap-1.5">
+            <span class="inline-flex items-center gap-1.5 rounded-full bg-[#F2F4F6] px-2.5 py-1 text-[12px] font-semibold text-[#191F28]">
+              <span class="h-2 w-2 rounded-full" style="background: <%= item.categoryColor %>"></span>
+              <%= item.categoryName %>
+            </span>
+            <% if (item.type !== 'expense') { %>
+              <span class="rounded-full px-2 py-1 text-[11px] font-semibold <%= item.type === 'income' ? 'bg-[#FFF1F1] text-[#F04452]' : 'bg-[#E8F3FF] text-[#3182F6]' %>"><%= item.typeLabel %></span>
+            <% } %>
+            <% if (item.classLabel === '고정비') { %>
+              <span class="rounded-full bg-[#F2F4F6] px-2 py-1 text-[11px] font-semibold text-[#4E5968]">고정비</span>
+            <% } %>
+          </div>
+          <p class="mt-2 truncate font-semibold"><%= item.memo || item.where %></p>
+          <p class="mt-1 truncate text-[13px] text-[#8B95A1]"><%= item.dateText %><% if (item.memo) { %> · <%= item.where %><% } %></p>
           <% if (item.statement) { %>
             <form method="post" action="/transactions/<%= item.id %>/statement" class="mt-2">
               <input type="hidden" name="month" value="<%= page.month %>">

@@ -448,6 +448,7 @@ function decorate(tx, index) {
     typeLabel: TYPE_LABELS[tx.type],
     classLabel,
     categoryName: category ? category.name : '기타',
+    categoryColor: category && /^#[0-9A-Fa-f]{6}$/.test(category.color) ? category.color : '#94A3B8',
     where,
     memo: tx.memo,
     amountText: tx.type === 'transfer' ? formatKRW(tx.amount) : formatSignedKRW(signed),
