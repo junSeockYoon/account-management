@@ -103,6 +103,7 @@ function getReport() {
       asOf,
       metaRepository.getProfile().monthlyCardLimit,
       metaRepository.getProfile().cardCycleDay,
+      cards,
     ),
     categories: categoryRows,
   };

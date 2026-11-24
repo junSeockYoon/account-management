@@ -26,6 +26,28 @@ function stockCostKRW(stock, usdRate) {
   return Math.round(cost * rate);
 }
 
+function expenseIncludingUnpaid(transactions, cards, start, end) {
+  const creditIds = new Set((cards || []).filter((card) => card.type === 'credit').map((card) => card.id));
+  let recorded = 0;
+  let included = 0;
+  (transactions || []).forEach((tx) => {
+    if (tx.type !== 'expense' || tx.date < start || tx.date > end) return;
+    recorded += tx.amount;
+    if (tx.paymentMethod === 'card' && creditIds.has(tx.cardId) && tx.includedInUnpaid !== false) {
+      included += tx.amount;
+    }
+  });
+  const unpaid = (cards || []).reduce((sum, card) => (
+    card.type === 'credit' ? sum + (Number(card.unpaidAmount) || 0) : sum
+  ), 0);
+  return {
+    recorded,
+    included,
+    unpaid,
+    total: recorded - included + unpaid,
+  };
+}
+
 function cardDebt(card, transactions) {
   if (!card || card.type !== 'credit') return 0;
   const later = (transactions || []).reduce((sum, tx) => {
@@ -49,5 +71,6 @@ module.exports = {
   stockReturnRate,
   stockCostKRW,
   cardDebt,
+  expenseIncludingUnpaid,
   directionOf,
 };

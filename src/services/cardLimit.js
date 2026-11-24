@@ -50,20 +50,29 @@ function rangeLabel(start, end) {
   return `${start.slice(0, 4)}년 ${formatMonthDay(start)}–${end.slice(0, 4)}년 ${formatMonthDay(end)}`;
 }
 
-function spentOnCards(transactions, start, end) {
+function spentOnCards(transactions, start, end, { openOnly = false } = {}) {
   return transactions.reduce((total, tx) => {
     if (tx.type !== 'expense' || tx.paymentMethod !== 'card') return total;
     if (tx.date < start || tx.date > end) return total;
+    if (openOnly && tx.includedInUnpaid !== false) return total;
     return total + tx.amount;
   }, 0);
 }
 
-function present(transactions, asOf, limit, cycleDay) {
+function present(transactions, asOf, limit, cycleDay, cards) {
   const { start, end } = period(asOf, cycleDay);
-  const spent = spentOnCards(transactions, start, asOf);
+  const usage = spentOnCards(transactions, start, asOf);
+  const later = spentOnCards(transactions, start, asOf, { openOnly: true });
+  const unpaid = (cards || []).reduce((sum, card) => (
+    card.type === 'credit' ? sum + (Number(card.unpaidAmount) || 0) : sum
+  ), 0);
+  const spent = unpaid + later;
   const base = {
     spent,
     spentText: formatKRW(spent),
+    usageText: formatKRW(usage),
+    laterText: formatKRW(later),
+    unpaidText: formatKRW(unpaid),
     rangeLabel: rangeLabel(start, end),
     input: limit > 0 ? String(limit) : '',
     cycleInput: cycleDay >= 1 && cycleDay <= 31 ? String(cycleDay) : '',

@@ -20,7 +20,7 @@ const {
 } = require('../utils/format');
 const { getState } = require('../repositories/store');
 const db = require('../repositories/db');
-const { stockValueKRW, cardDebt } = require('../utils/assetMath');
+const { stockValueKRW, cardDebt, expenseIncludingUnpaid } = require('../utils/assetMath');
 const cardLimit = require('./cardLimit');
 
 function sumBy(items, pick) {
@@ -184,9 +184,11 @@ function getDashboard() {
   const periodStart = monthStart(asOf);
   const previousEnd = shiftMonth(asOf, -1);
   const previousStart = monthStart(previousEnd);
-  const monthExpense = sumExpense(transactions, periodStart, periodEnd);
+  const recordedExpense = sumExpense(transactions, periodStart, periodEnd);
+  const withUnpaid = expenseIncludingUnpaid(transactions, cards, periodStart, periodEnd);
+  const monthExpense = withUnpaid.total;
   const previousExpense = sumExpense(transactions, previousStart, previousEnd);
-  const delta = monthExpense - previousExpense;
+  const delta = recordedExpense - previousExpense;
   const direction = delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat';
   const caption = direction === 'up'
     ? '전월 같은 기간보다 늘었습니다'
@@ -205,6 +207,9 @@ function getDashboard() {
       text: formatKRW(monthExpense),
       label: `${Number(periodStart.slice(5, 7))}월 지출`,
       rangeLabel: `${formatMonthDay(periodStart)}–${formatMonthDay(periodEnd)}`,
+      detail: withUnpaid.included > 0
+        ? `거래 ${formatKRW(withUnpaid.recorded)} − 미결제에 포함된 카드 지출 ${formatKRW(withUnpaid.included)} + 카드 미결제 ${formatKRW(withUnpaid.unpaid)}`
+        : `거래 ${formatKRW(withUnpaid.recorded)} + 카드 미결제 ${formatKRW(withUnpaid.unpaid)}`,
     },
     expenseDelta: {
       amount: delta,
@@ -215,13 +220,14 @@ function getDashboard() {
       previousRangeLabel: `${formatMonthDay(previousStart)}–${formatMonthDay(previousEnd)}`,
     },
     portfolio: buildPortfolio(cash, safe, investment),
-    topCategories: buildTopCategories(transactions, categories, periodStart, periodEnd, monthExpense),
+    topCategories: buildTopCategories(transactions, categories, periodStart, periodEnd, recordedExpense),
     maturities: buildMaturities(deposits, savings, asOf),
     cardLimit: cardLimit.present(
       transactions,
       asOf,
       metaRepository.getProfile().monthlyCardLimit,
       metaRepository.getProfile().cardCycleDay,
+      cards,
     ),
     fxLabel: usdRate ? `달러 주식은 1달러 = ${usdRate.toLocaleString('ko-KR')}원으로 환산했습니다` : '',
   };
