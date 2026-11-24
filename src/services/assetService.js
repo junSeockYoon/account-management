@@ -4,6 +4,7 @@ const savingsRepository = require('../repositories/savingsRepository');
 const stockRepository = require('../repositories/stockRepository');
 const cardRepository = require('../repositories/cardRepository');
 const transactionRepository = require('../repositories/transactionRepository');
+const recurringRepository = require('../repositories/recurringRepository');
 const metaRepository = require('../repositories/metaRepository');
 const db = require('../repositories/db');
 const { getState } = require('../repositories/store');
@@ -88,6 +89,7 @@ function accountLabel(id) {
 function isAccountInUse(id) {
   if (savingsRepository.findAll().some((item) => item.autoTransferAccountId === id)) return true;
   if (cardRepository.findAll().some((item) => item.linkedAccountId === id)) return true;
+  if (recurringRepository.findAll().some((item) => item.accountId === id)) return true;
   return transactionRepository.findAll().some((tx) => (
     tx.accountId === id || (tx.toAssetType === 'account' && tx.toAssetId === id)
   ));
@@ -98,6 +100,7 @@ function isTargetInUse(type, id) {
 }
 
 function isCardInUse(id) {
+  if (recurringRepository.findAll().some((item) => item.cardId === id)) return true;
   return transactionRepository.findAll().some((tx) => tx.cardId === id);
 }
 

@@ -3,6 +3,7 @@ const dashboardController = require('../controllers/dashboardController');
 const assetController = require('../controllers/assetController');
 const transactionController = require('../controllers/transactionController');
 const analyticsController = require('../controllers/analyticsController');
+const recurringController = require('../controllers/recurringController');
 const authController = require('../controllers/authController');
 
 function guard(handler) {
@@ -21,6 +22,8 @@ router.get('/', guard(dashboardController.home));
 router.post('/card-limit', guard(analyticsController.saveCardLimit));
 router.get('/transactions', guard(transactionController.show));
 router.post('/transactions', guard(transactionController.create));
+router.post('/recurring', guard(recurringController.create));
+router.post('/recurring/:id/delete', guard(recurringController.remove));
 router.post('/transactions/:id/update', guard(transactionController.update));
 router.post('/transactions/:id/delete', guard(transactionController.remove));
 router.get('/assets', guard(assetController.show));

@@ -1,7 +1,8 @@
 const express = require('express');
 const path = require('path');
 const navItems = require('./src/config/nav');
-const { loadState, runWithState } = require('./src/repositories/store');
+const { loadState, runWithState, getState } = require('./src/repositories/store');
+const recurringService = require('./src/services/recurringService');
 const { ensureAccess } = require('./src/auth/session');
 const { formatKoreanDate, safeJson } = require('./src/utils/format');
 
@@ -28,9 +29,10 @@ app.use((req, res, next) => {
         res.redirect(303, '/login');
         return;
       }
-      return loadState(token).then((state) => {
-        runWithState(state, () => {
+      return loadState(token).then((state) => runWithState(state, async () => {
+          await recurringService.materialize();
           res.locals.profile = state.profile;
+          res.locals.recurringNotice = getState().recurringNotice || '';
           res.locals.asOfLabel = formatKoreanDate(state.asOf);
           res.locals.pageTitle = '자산관리';
           res.locals.navItems = navItems.map((item) => ({
@@ -38,8 +40,7 @@ app.use((req, res, next) => {
             active: item.href === '/' ? req.path === '/' : req.path.startsWith(item.href),
           }));
           next();
-        });
-      });
+      }));
     })
     .catch((err) => {
       if (err.code === 'UNAUTHORIZED') {

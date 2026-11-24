@@ -1,10 +1,12 @@
 const dashboardService = require('../services/dashboardService');
 const cardLimit = require('../services/cardLimit');
 
-function home(req, res) {
+async function home(req, res) {
   res.locals.pageTitle = '대시보드';
+  const dashboard = dashboardService.getDashboard();
+  await dashboardService.rememberNetWorth(dashboard.snapshot);
   res.render('dashboard', {
-    dashboard: dashboardService.getDashboard(),
+    dashboard,
     flash: cardLimit.flash(req.query),
   });
 }

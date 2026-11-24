@@ -18,6 +18,8 @@ const {
   shiftMonth,
   toShares,
 } = require('../utils/format');
+const { getState } = require('../repositories/store');
+const db = require('../repositories/db');
 const { stockValueKRW } = require('../utils/assetMath');
 const cardLimit = require('./cardLimit');
 
@@ -133,6 +135,25 @@ function buildMaturities(deposits, savings, asOf) {
     .sort((a, b) => a.date.localeCompare(b.date) || a.name.localeCompare(b.name, 'ko'));
 }
 
+function historyLabel(month, asOf) {
+  const [year, mon] = month.split('-');
+  const label = `${Number(mon)}월`;
+  return year === asOf.slice(0, 4) ? label : `${year.slice(2)}.${label}`;
+}
+
+function buildHistory(stored, live, asOf) {
+  const byMonth = new Map((stored || []).map((item) => [item.month, item]));
+  byMonth.set(live.month, live);
+  return [...byMonth.values()]
+    .sort((a, b) => a.month.localeCompare(b.month))
+    .slice(-6)
+    .map((item) => ({
+      label: historyLabel(item.month, asOf),
+      amount: item.netWorth,
+      text: formatKRW(item.netWorth),
+    }));
+}
+
 function getDashboard() {
   const asOf = metaRepository.getAsOf();
   const usdRate = metaRepository.getFxRate().USD;
@@ -150,6 +171,14 @@ function getDashboard() {
   const liabilities = sumBy(cards, (card) => card.unpaidAmount);
   const assets = cash + safe + investment;
   const netWorth = assets - liabilities;
+  const snapshot = {
+    month: `${asOf.slice(0, 7)}-01`,
+    cash,
+    safe,
+    investment,
+    liabilities,
+    netWorth,
+  };
 
   const periodEnd = asOf;
   const periodStart = monthStart(asOf);
@@ -166,6 +195,8 @@ function getDashboard() {
       : '전월 같은 기간과 같습니다';
 
   return {
+    snapshot,
+    history: buildHistory(getState().netWorthMonths, snapshot, asOf),
     netWorth: { amount: netWorth, text: formatKRW(netWorth) },
     assets: { amount: assets, text: formatKRW(assets), compact: formatMan(assets) },
     liabilities: { amount: liabilities, text: formatKRW(liabilities) },
@@ -196,4 +227,19 @@ function getDashboard() {
   };
 }
 
-module.exports = { getDashboard };
+async function rememberNetWorth(snapshot) {
+  const state = getState();
+  if (!state.userId || !snapshot) return;
+  const list = state.netWorthMonths || [];
+  const index = list.findIndex((item) => item.month === snapshot.month);
+  if (index >= 0) list[index] = snapshot;
+  else list.push(snapshot);
+  state.netWorthMonths = list;
+  try {
+    await db.upsertNetWorth(state.userId, snapshot);
+  } catch (err) {
+    if (err.code !== 'WRITE') throw err;
+  }
+}
+
+module.exports = { getDashboard, rememberNetWorth, buildHistory };

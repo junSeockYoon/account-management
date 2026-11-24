@@ -4,6 +4,7 @@ const cardRepository = require('../repositories/cardRepository');
 const transactionRepository = require('../repositories/transactionRepository');
 const categoryRepository = require('../repositories/categoryRepository');
 const metaRepository = require('../repositories/metaRepository');
+const recurringRepository = require('../repositories/recurringRepository');
 const form = require('../utils/form');
 const { formatKRW, formatSignedKRW, formatMonthDay } = require('../utils/format');
 
@@ -11,12 +12,16 @@ const NOTICES = {
   created: '저장했습니다.',
   updated: '수정했습니다.',
   deleted: '삭제했습니다.',
+  recurring: '매달 고정 지출을 저장했습니다.',
+  'recurring-deleted': '고정 지출을 지웠습니다. 이미 만든 거래는 남습니다.',
 };
 
 const ERRORS = {
   invalid: '입력값을 다시 확인해 주세요.',
   notfound: '거래를 찾지 못했습니다.',
   nouser: 'Supabase에 가입한 사용자가 없어 저장할 수 없습니다.',
+  'recur-invalid': '금액, 날짜, 카테고리, 결제 수단을 다시 확인해 주세요.',
+  'recur-write': '고정 지출을 저장하지 못했습니다. Supabase에서 recurring.sql을 실행해 주세요.',
 };
 
 const TYPE_LABELS = { income: '수입', expense: '지출', transfer: '이체' };
@@ -337,6 +342,9 @@ function getPage(query) {
         label: `${item.bankName} ${item.productName}`,
       })),
     ],
+    recurring: recurringRepository.findAll()
+      .map((item) => presentRecurring(item, index))
+      .sort((a, b) => a.chargeDay - b.chargeDay || a.title.localeCompare(b.title, 'ko')),
     calendar: {
       ...buildCalendar(transactions, calendarKey, asOf, day, hrefParams),
       prevHref: monthIndex >= 0 && months[monthIndex + 1]
@@ -346,6 +354,24 @@ function getPage(query) {
     },
     notice: NOTICES[query.notice] || '',
     error: ERRORS[query.error] || '',
+  };
+}
+
+function presentRecurring(item, index) {
+  const category = index.categories.get(item.categoryId);
+  const where = item.paymentMethod === 'card'
+    ? (index.cards.get(item.cardId) ? `${index.cards.get(item.cardId).issuer} ${index.cards.get(item.cardId).name}` : '카드')
+    : (() => {
+      const account = index.accounts.get(item.accountId);
+      const name = account ? accountLabel(account) : '계좌 없음';
+      return item.paymentMethod === 'cash' ? `현금 · ${name}` : name;
+    })();
+  return {
+    id: item.id,
+    chargeDay: item.chargeDay,
+    title: item.memo || (category ? category.name : '고정 지출'),
+    detail: `매월 ${item.chargeDay}일 · ${category ? category.name : '카테고리 없음'} · ${where}`,
+    amountText: formatKRW(item.amount),
   };
 }
 
@@ -415,20 +441,25 @@ async function saveEffects(tx) {
   await Promise.all(jobs);
 }
 
+async function commitNew(tx) {
+  const row = { ...tx, balanceApplied: true };
+  if (!apply(row, 1)) return false;
+  await transactionRepository.insert(row);
+  await saveEffects(row);
+  return true;
+}
+
 async function create(body) {
   const parsed = parse(body);
   if (!parsed) return fail('invalid', body);
-  const tx = { ...parsed, balanceApplied: true };
-  if (!apply(tx, 1)) return fail('invalid', body);
   try {
-    await transactionRepository.insert(tx);
-    await saveEffects(tx);
+    if (!await commitNew(parsed)) return fail('invalid', body);
   } catch (err) {
     const failed = writeFailure(err);
-    if (failed) return { ...failed, month: tx.date.slice(0, 7) };
+    if (failed) return { ...failed, month: parsed.date.slice(0, 7) };
     throw err;
   }
-  return ok('created', tx.date.slice(0, 7));
+  return ok('created', parsed.date.slice(0, 7));
 }
 
 async function update(id, body) {
@@ -473,4 +504,4 @@ async function remove(id, body) {
   return ok('deleted', month);
 }
 
-module.exports = { getPage, create, update, remove };
+module.exports = { getPage, create, update, remove, commitNew };

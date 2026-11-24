@@ -84,6 +84,71 @@
   </form>
 </section>
 
+<section class="mt-4 rounded-[20px] border border-[#E5E8EB] bg-white p-6">
+  <h2 class="text-[17px] font-bold">매달 고정 지출</h2>
+  <p class="mt-1 text-[13px] leading-5 text-[#8B95A1]">기준일에 그 날이 지나면 고정비 거래가 한 번 생깁니다. 계좌 잔액이나 카드 미결제도 같이 움직이고, 규칙을 지워도 이미 만든 거래는 남습니다.</p>
+  <form data-recurring method="post" action="/recurring" class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2" autocomplete="off">
+    <label class="block text-[13px] font-medium text-[#4E5968]">금액<input name="amount" required inputmode="numeric" class="<%= field %>" placeholder="55000"></label>
+    <label class="block text-[13px] font-medium text-[#4E5968]">매달<input name="chargeDay" required inputmode="numeric" class="<%= field %>" placeholder="5"></label>
+    <label class="block text-[13px] font-medium text-[#4E5968]">카테고리
+      <select name="categoryId" class="<%= field %>">
+        <% page.categories.forEach((item) => { if (item.group !== 'expense') return; %>
+          <option value="<%= item.id %>"><%= item.name %></option>
+        <% }) %>
+      </select>
+    </label>
+    <label class="block text-[13px] font-medium text-[#4E5968]">결제 수단
+      <select name="paymentMethod" class="<%= field %>">
+        <option value="card" selected>카드</option>
+        <option value="account">계좌</option>
+        <option value="cash">현금</option>
+      </select>
+    </label>
+    <div data-recurring-card>
+      <label class="block text-[13px] font-medium text-[#4E5968]">카드
+        <select name="cardId" class="<%= field %>">
+          <% page.cards.forEach((item) => { %>
+            <option value="<%= item.id %>"><%= item.label %></option>
+          <% }) %>
+        </select>
+      </label>
+    </div>
+    <div data-recurring-account hidden>
+      <label class="block text-[13px] font-medium text-[#4E5968]">계좌
+        <select name="accountId" class="<%= field %>">
+          <% page.accounts.forEach((item) => { %>
+            <option value="<%= item.id %>"><%= item.label %></option>
+          <% }) %>
+        </select>
+      </label>
+    </div>
+    <label class="block text-[13px] font-medium text-[#4E5968] sm:col-span-2">메모<input name="memo" maxlength="80" class="<%= field %>" placeholder="월세, 구독"></label>
+    <div class="sm:col-span-2 flex justify-end">
+      <button type="submit" class="rounded-full bg-[#3182F6] px-4 py-2 text-[14px] font-semibold text-white">추가</button>
+    </div>
+  </form>
+  <% if (page.recurring.length === 0) { %>
+    <p class="mt-4 text-[14px] text-[#8B95A1]">등록된 고정 지출이 없습니다.</p>
+  <% } else { %>
+    <ul class="mt-4 divide-y divide-[#F2F4F6]">
+      <% page.recurring.forEach((item) => { %>
+        <li class="flex items-center justify-between gap-3 py-3">
+          <div class="min-w-0">
+            <p class="truncate font-semibold"><%= item.title %></p>
+            <p class="mt-1 truncate text-[13px] text-[#8B95A1]"><%= item.detail %></p>
+          </div>
+          <div class="flex shrink-0 items-center gap-3">
+            <p class="font-bold tabular-nums"><%= item.amountText %></p>
+            <form method="post" action="/recurring/<%= item.id %>/delete" data-confirm="<%= item.title %>">
+              <button type="submit" class="rounded-full px-3 py-1.5 text-[13px] font-semibold text-[#F04452] hover:bg-[#FFF1F1]">삭제</button>
+            </form>
+          </div>
+        </li>
+      <% }) %>
+    </ul>
+  <% } %>
+</section>
+
 <section class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3" aria-label="조회 합계">
   <article class="rounded-[20px] border border-[#E5E8EB] bg-white px-5 py-4">
     <p class="text-[13px] text-[#6B7684]">지출</p>

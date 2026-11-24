@@ -81,3 +81,17 @@
   form.paymentMethod.addEventListener('change', sync);
   sync();
 })();
+
+(function () {
+  const form = document.querySelector('[data-recurring]');
+  if (!form) return;
+  const cardBox = form.querySelector('[data-recurring-card]');
+  const accountBox = form.querySelector('[data-recurring-account]');
+  function sync() {
+    const card = form.paymentMethod.value === 'card';
+    cardBox.hidden = !card;
+    accountBox.hidden = card;
+  }
+  form.paymentMethod.addEventListener('change', sync);
+  sync();
+})();

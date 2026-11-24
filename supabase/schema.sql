@@ -172,6 +172,45 @@ create table public.transactions (
   foreign key (user_id, to_savings_id) references public.savings (user_id, id) on delete restrict
 );
 
+create table public.recurring_expenses (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  amount bigint not null check (amount > 0),
+  charge_day smallint not null check (charge_day between 1 and 31),
+  category_id text not null references public.categories (id) on delete restrict,
+  payment_method public.payment_method not null,
+  card_id uuid,
+  account_id uuid,
+  memo text not null default '',
+  created_at timestamptz not null default now(),
+  unique (user_id, id),
+  foreign key (user_id, card_id) references public.cards (user_id, id) on delete restrict,
+  foreign key (user_id, account_id) references public.accounts (user_id, id) on delete restrict,
+  constraint recurring_payment check (
+    (payment_method = 'card' and card_id is not null and account_id is null)
+    or (payment_method in ('account', 'cash') and account_id is not null and card_id is null)
+  )
+);
+
+create table public.net_worth_months (
+  user_id uuid not null references auth.users (id) on delete cascade,
+  month_on date not null,
+  cash bigint not null,
+  safe_amount bigint not null,
+  investment bigint not null,
+  liabilities bigint not null,
+  net_worth bigint not null,
+  primary key (user_id, month_on),
+  constraint net_worth_month_start check (extract(day from month_on) = 1)
+);
+
+alter table public.transactions
+  add column recurring_id uuid references public.recurring_expenses (id) on delete set null;
+
+create unique index transactions_recurring_month_idx
+  on public.transactions (recurring_id, ((date_trunc('month', occurred_on::timestamp))::date))
+  where recurring_id is not null;
+
 create index transactions_user_date_idx on public.transactions (user_id, occurred_on desc);
 create index transactions_card_idx on public.transactions (card_id);
 create index transactions_account_idx on public.transactions (account_id);
@@ -246,6 +285,8 @@ alter table public.savings enable row level security;
 alter table public.stocks enable row level security;
 alter table public.cards enable row level security;
 alter table public.transactions enable row level security;
+alter table public.recurring_expenses enable row level security;
+alter table public.net_worth_months enable row level security;
 
 create policy "본인 프로필" on public.profiles
 for all to authenticated
@@ -282,6 +323,16 @@ using (user_id = auth.uid())
 with check (user_id = auth.uid());
 
 create policy "본인 거래" on public.transactions
+for all to authenticated
+using (user_id = auth.uid())
+with check (user_id = auth.uid());
+
+create policy "본인 고정지출" on public.recurring_expenses
+for all to authenticated
+using (user_id = auth.uid())
+with check (user_id = auth.uid());
+
+create policy "본인 순자산" on public.net_worth_months
 for all to authenticated
 using (user_id = auth.uid())
 with check (user_id = auth.uid());

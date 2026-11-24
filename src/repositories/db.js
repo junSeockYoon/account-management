@@ -175,10 +175,11 @@ const tables = {
         expenseClass: row.expense_class,
         memo: row.memo || '',
         balanceApplied: row.balance_applied,
+        recurringId: row.recurring_id || null,
       };
     },
     toRow(item, userId) {
-      return {
+      const row = {
         user_id: userId,
         occurred_on: item.date,
         type: item.type,
@@ -192,6 +193,57 @@ const tables = {
         expense_class: item.expenseClass || null,
         memo: item.memo || '',
         balance_applied: item.balanceApplied !== false,
+      };
+      if (item.recurringId) row.recurring_id = item.recurringId;
+      return row;
+    },
+  },
+  recurring_expenses: {
+    fromRow(row) {
+      return {
+        id: row.id,
+        amount: num(row.amount),
+        chargeDay: num(row.charge_day),
+        categoryId: row.category_id,
+        paymentMethod: row.payment_method,
+        cardId: row.card_id,
+        accountId: row.account_id,
+        memo: row.memo || '',
+      };
+    },
+    toRow(item, userId) {
+      return {
+        user_id: userId,
+        amount: item.amount,
+        charge_day: item.chargeDay,
+        category_id: item.categoryId,
+        payment_method: item.paymentMethod,
+        card_id: item.cardId || null,
+        account_id: item.accountId || null,
+        memo: item.memo || '',
+      };
+    },
+  },
+  net_worth_months: {
+    fromRow(row) {
+      return {
+        month: row.month_on,
+        cash: num(row.cash),
+        safe: num(row.safe_amount),
+        investment: num(row.investment),
+        liabilities: num(row.liabilities),
+        netWorth: num(row.net_worth),
+      };
+    },
+    toRow(item, userId) {
+      return {
+        user_id: userId,
+        month_on: item.month,
+        cash: item.cash,
+        safe_amount: item.safe,
+        investment: item.investment,
+        liabilities: item.liabilities,
+        net_worth: item.netWorth,
       };
     },
   },
@@ -216,7 +268,7 @@ function requestToken(explicit) {
   return require('./store').getState().accessToken;
 }
 
-async function rest(path, token, { method = 'GET', body } = {}) {
+async function rest(path, token, { method = 'GET', body, prefer } = {}) {
   const missing = configError();
   if (missing) throw missing;
   const access = requestToken(token);
@@ -226,7 +278,8 @@ async function rest(path, token, { method = 'GET', body } = {}) {
     Authorization: `Bearer ${access}`,
     'Content-Type': 'application/json',
   };
-  if (method === 'POST' || method === 'PATCH') headers.Prefer = 'return=representation';
+  if (prefer) headers.Prefer = prefer;
+  else if (method === 'POST' || method === 'PATCH') headers.Prefer = 'return=representation';
   const response = await fetch(`${process.env.SUPABASE_URL}/rest/v1/${path}`, {
     method,
     headers,
@@ -246,6 +299,16 @@ async function rows(table, token, userId) {
   const query = userId ? `?select=*&user_id=eq.${userId}` : '?select=*';
   const list = await rest(`${table}${query}`, token);
   return (list || []).map((row) => tables[table].fromRow(row));
+}
+
+async function optionalRows(table, token, userId) {
+  if (!userId) return [];
+  try {
+    return await rows(table, token, userId);
+  } catch (err) {
+    if (err.code !== 'WRITE') throw err;
+    return [];
+  }
 }
 
 async function loadProfiles(token) {
@@ -272,7 +335,7 @@ async function fetchState(token) {
   const profiles = await loadProfiles(token);
   const profile = profiles && profiles[0];
   const userId = (profile && profile.id) || userIdFromToken(token);
-  const [categories, accounts, deposits, savings, stocks, cards, transactions] = await Promise.all([
+  const [categories, accounts, deposits, savings, stocks, cards, transactions, recurring, netWorthMonths] = await Promise.all([
     rest('categories?select=id,name,group,color,sort_order&order=sort_order.asc', token),
     userId ? rows('accounts', token, userId) : [],
     userId ? rows('deposits', token, userId) : [],
@@ -280,6 +343,8 @@ async function fetchState(token) {
     userId ? rows('stocks', token, userId) : [],
     userId ? rows('cards', token, userId) : [],
     userId ? rows('transactions', token, userId) : [],
+    optionalRows('recurring_expenses', token, userId),
+    optionalRows('net_worth_months', token, userId),
   ]);
 
   return {
@@ -304,6 +369,9 @@ async function fetchState(token) {
     stocks,
     cards,
     transactions,
+    recurring,
+    netWorthMonths,
+    recurringNotice: '',
   };
 }
 
@@ -332,8 +400,16 @@ async function updateMonthlyCardLimit(userId, amount, cycleDay) {
   });
 }
 
+async function upsertNetWorth(userId, item) {
+  await rest('net_worth_months?on_conflict=user_id,month_on', null, {
+    method: 'POST',
+    prefer: 'resolution=merge-duplicates,return=minimal',
+    body: tables.net_worth_months.toRow(item, userId),
+  });
+}
+
 async function remove(table, id) {
   await rest(`${table}?id=eq.${encodeURIComponent(id)}`, null, { method: 'DELETE' });
 }
 
-module.exports = { fetchState, insert, update, updateProfileRate, updateMonthlyCardLimit, remove };
+module.exports = { fetchState, insert, update, updateProfileRate, updateMonthlyCardLimit, upsertNetWorth, remove };

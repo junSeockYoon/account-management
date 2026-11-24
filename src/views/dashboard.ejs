@@ -34,6 +34,18 @@
   </article>
 </section>
 
+<section class="mt-4 rounded-[20px] border border-[#E5E8EB] bg-white p-6">
+  <h2 class="text-[17px] font-bold">순자산 추이</h2>
+  <p class="mt-1 text-[13px] text-[#8B95A1]">이번 달은 화면을 열 때마다 지금 금액으로 다시 저장합니다. 지난달은 그달에 남겨 둔 금액입니다.</p>
+  <% if (dashboard.history.length === 0) { %>
+    <p class="mt-8 text-[14px] text-[#8B95A1]">아직 기록된 달이 없습니다.</p>
+  <% } else { %>
+    <div class="mt-4 h-64">
+      <canvas id="net-worth-chart" aria-label="최근 순자산 추이"></canvas>
+    </div>
+  <% } %>
+</section>
+
 <%- include('partials/card-limit', { budget: dashboard.cardLimit, next: 'home' }) %>
 
 <section class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-5">
@@ -122,6 +134,7 @@
 </section>
 
 <script id="portfolio-data" type="application/json"><%- safeJson(dashboard.portfolio) %></script>
+<script id="net-worth-data" type="application/json"><%- safeJson(dashboard.history) %></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
 <script src="/js/dashboard.js"></script>
 <%- include('partials/close') %>
