@@ -229,7 +229,7 @@ function apply(tx, sign) {
       const card = cardRepository.findById(tx.cardId);
       if (!card) return false;
       if (card.type === 'credit') {
-        card.unpaidAmount += amount;
+        // 미결제는 카드사 금액을 직접 적은 값이다. 내역을 넣어도 바꾸지 않는다.
         return true;
       }
       const account = accountRepository.findById(card.linkedAccountId);

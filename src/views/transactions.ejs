@@ -13,7 +13,7 @@
 <section id="tx-entry" data-as-of="<%= page.asOf %>" class="rounded-[20px] border border-[#E5E8EB] bg-white p-6">
   <form data-editor method="post" action="/transactions" autocomplete="off">
     <h2 class="text-[17px] font-bold">소비 <span data-mode>입력</span></h2>
-    <p class="mt-1 text-[13px] leading-5 text-[#8B95A1]">금액과 날짜를 적고 저장하면 목록과 리포트에 반영됩니다. 체크·현금은 계좌 잔액이 줄고, 신용카드는 미결제만 늘어납니다.</p>
+    <p class="mt-1 text-[13px] leading-5 text-[#8B95A1]">금액과 날짜를 적으면 목록과 리포트에 남습니다. 체크·현금·계좌는 잔액이 줄고, 신용카드 미결제는 바뀌지 않습니다.</p>
     <div class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
       <label class="block text-[13px] font-medium text-[#4E5968]">금액<input name="amount" required inputmode="numeric" class="<%= field %>" placeholder="12000"></label>
       <label class="block text-[13px] font-medium text-[#4E5968]">날짜<input name="date" type="date" required value="<%= page.asOf %>" class="<%= field %>"></label>
@@ -86,7 +86,7 @@
 
 <section class="mt-4 rounded-[20px] border border-[#E5E8EB] bg-white p-6">
   <h2 class="text-[17px] font-bold">매달 고정 지출</h2>
-  <p class="mt-1 text-[13px] leading-5 text-[#8B95A1]">기준일에 그 날이 지나면 고정비 거래가 한 번 생깁니다. 계좌 잔액이나 카드 미결제도 같이 움직이고, 규칙을 지워도 이미 만든 거래는 남습니다.</p>
+  <p class="mt-1 text-[13px] leading-5 text-[#8B95A1]">기준일에 그 날이 지나면 고정비 거래가 한 번 생깁니다. 체크·계좌·현금만 잔액이 움직이고, 신용카드 미결제는 그대로입니다. 규칙을 지워도 이미 만든 거래는 남습니다.</p>
   <form data-recurring method="post" action="/recurring" class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2" autocomplete="off">
     <label class="block text-[13px] font-medium text-[#4E5968]">금액<input name="amount" required inputmode="numeric" class="<%= field %>" placeholder="55000"></label>
     <label class="block text-[13px] font-medium text-[#4E5968]">매달<input name="chargeDay" required inputmode="numeric" class="<%= field %>" placeholder="5"></label>
