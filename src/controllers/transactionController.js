@@ -12,16 +12,16 @@ function show(req, res) {
   res.render('transactions', { page: transactionService.getPage(req.query) });
 }
 
-function create(req, res) {
-  redirectTo(res, transactionService.create(req.body));
+async function create(req, res) {
+  redirectTo(res, await transactionService.create(req.body));
 }
 
-function update(req, res) {
-  redirectTo(res, transactionService.update(req.params.id, req.body));
+async function update(req, res) {
+  redirectTo(res, await transactionService.update(req.params.id, req.body));
 }
 
-function remove(req, res) {
-  redirectTo(res, transactionService.remove(req.params.id, req.body));
+async function remove(req, res) {
+  redirectTo(res, await transactionService.remove(req.params.id, req.body));
 }
 
 module.exports = { show, create, update, remove };

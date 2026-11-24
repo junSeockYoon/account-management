@@ -1,13 +1,16 @@
-const { createInitialState } = require('../data/mockData');
+const { AsyncLocalStorage } = require('async_hooks');
+const { fetchState } = require('./db');
 
-let state = createInitialState();
+const storage = new AsyncLocalStorage();
 
 function getState() {
+  const state = storage.getStore();
+  if (!state) throw new Error('요청 밖에서 데이터를 읽었습니다.');
   return state;
 }
 
-function createId(prefix) {
-  return `${prefix}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+function runWithState(state, fn) {
+  return storage.run(state, fn);
 }
 
-module.exports = { getState, createId };
+module.exports = { getState, runWithState, loadState: fetchState };

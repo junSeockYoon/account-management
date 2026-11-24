@@ -1,7 +1,7 @@
 const express = require('express');
 const path = require('path');
 const navItems = require('./src/config/nav');
-const { getState } = require('./src/repositories/store');
+const { loadState, runWithState } = require('./src/repositories/store');
 const { formatKoreanDate, safeJson } = require('./src/utils/format');
 
 const app = express();
@@ -15,15 +15,20 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use((req, res, next) => {
-  const state = getState();
-  res.locals.profile = state.profile;
-  res.locals.asOfLabel = formatKoreanDate(state.asOf);
-  res.locals.pageTitle = '자산관리';
-  res.locals.navItems = navItems.map((item) => ({
-    ...item,
-    active: item.href === '/' ? req.path === '/' : req.path.startsWith(item.href),
-  }));
-  next();
+  loadState()
+    .then((state) => {
+      runWithState(state, () => {
+        res.locals.profile = state.profile;
+        res.locals.asOfLabel = formatKoreanDate(state.asOf);
+        res.locals.pageTitle = '자산관리';
+        res.locals.navItems = navItems.map((item) => ({
+          ...item,
+          active: item.href === '/' ? req.path === '/' : req.path.startsWith(item.href),
+        }));
+        next();
+      });
+    })
+    .catch(next);
 });
 
 app.use(require('./src/routes'));
@@ -40,7 +45,10 @@ app.use((err, req, res, next) => {
     next(err);
     return;
   }
-  res.status(500).type('text').send('화면을 불러오지 못했습니다.');
+  const message = err.code === 'CONFIG'
+    ? 'Supabase 환경 변수가 없습니다.'
+    : '화면을 불러오지 못했습니다.';
+  res.status(500).type('text').send(message);
 });
 
 module.exports = app;

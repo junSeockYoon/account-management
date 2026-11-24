@@ -5,7 +5,6 @@ const stockRepository = require('../repositories/stockRepository');
 const cardRepository = require('../repositories/cardRepository');
 const transactionRepository = require('../repositories/transactionRepository');
 const metaRepository = require('../repositories/metaRepository');
-const { createId } = require('../repositories/store');
 const form = require('../utils/form');
 const {
   formatKRW,
@@ -47,6 +46,7 @@ const ERRORS = {
   'account-in-use': '연결된 거래, 적금 자동이체, 체크카드가 있어 삭제할 수 없습니다.',
   'asset-in-use': '연결된 거래가 있어 삭제할 수 없습니다.',
   'card-in-use': '이 카드로 기록된 거래가 있어 삭제할 수 없습니다.',
+  nouser: 'Supabase에 가입한 사용자가 없어 저장할 수 없습니다.',
 };
 
 const KIND_LABELS = {
@@ -189,7 +189,7 @@ function parseCard(body) {
   const performanceThreshold = form.integerAmount(body.performanceThreshold);
   const paymentDay = form.dayOfMonth(body.paymentDay, { required: false });
   if (!issuer || !name || !type || lastFour == null || performanceThreshold == null || paymentDay == null) return null;
-  if (lastFour && !/^\d{4}$/.test(lastFour)) return null;
+  if (!/^\d{4}$/.test(lastFour || '')) return null;
 
   if (type === 'debit') {
     const linkedAccountId = String(body.linkedAccountId ?? '').trim();
@@ -220,125 +220,164 @@ function parseCard(body) {
   };
 }
 
-function saveNew(repository, prefix, fields) {
-  return repository.insert({ id: createId(prefix), ...fields });
+function writeFailure(err) {
+  if (err.code === 'NO_USER') return { ok: false, error: 'nouser' };
+  if (err.code === 'WRITE') return { ok: false, error: 'invalid' };
+  return null;
 }
 
-function updateExisting(repository, id, fields) {
+async function saveNew(repository, fields) {
+  return repository.insert(fields);
+}
+
+async function updateExisting(repository, id, fields) {
   const current = repository.findById(id);
   if (!current) return null;
   Object.assign(current, fields);
+  await repository.save(current);
   return current;
 }
 
-function createAccount(body) {
+async function createAccount(body) {
   const parsed = parseAccount(body);
   if (!parsed) return { ok: false, error: 'invalid' };
-  saveNew(accountRepository, 'acc', parsed);
+  try {
+    await saveNew(accountRepository, parsed);
+  } catch (err) {
+    const failed = writeFailure(err);
+    if (failed) return failed;
+    throw err;
+  }
   return { ok: true, notice: 'created' };
 }
 
-function updateAccount(id, body) {
+async function persist(work) {
+  try {
+    return { ok: true, value: await work() };
+  } catch (err) {
+    const failed = writeFailure(err);
+    if (failed) return failed;
+    throw err;
+  }
+}
+
+async function updateAccount(id, body) {
   const parsed = parseAccount(body);
   if (!parsed) return { ok: false, error: 'invalid' };
-  if (!updateExisting(accountRepository, id, parsed)) return { ok: false, error: 'notfound' };
+  const saved = await persist(() => updateExisting(accountRepository, id, parsed));
+  if (!saved.ok) return saved;
+  if (!saved.value) return { ok: false, error: 'notfound' };
   return { ok: true, notice: 'updated' };
 }
 
-function deleteAccount(id) {
+async function deleteAccount(id) {
   if (!accountRepository.findById(id)) return { ok: false, error: 'notfound' };
   if (isAccountInUse(id)) return { ok: false, error: 'account-in-use' };
-  accountRepository.remove(id);
+  const saved = await persist(() => accountRepository.remove(id));
+  if (!saved.ok) return saved;
   return { ok: true, notice: 'deleted' };
 }
 
-function createDeposit(body) {
+async function createDeposit(body) {
   const parsed = parseDeposit(body);
   if (!parsed) return { ok: false, error: 'invalid' };
-  saveNew(depositRepository, 'dep', parsed);
+  const saved = await persist(() => saveNew(depositRepository, parsed));
+  if (!saved.ok) return saved;
   return { ok: true, notice: 'created' };
 }
 
-function updateDeposit(id, body) {
+async function updateDeposit(id, body) {
   const current = depositRepository.findById(id);
   if (!current) return { ok: false, error: 'notfound' };
   const parsed = parseDeposit(body, current);
   if (!parsed) return { ok: false, error: 'invalid' };
-  Object.assign(current, parsed);
+  const saved = await persist(() => updateExisting(depositRepository, id, parsed));
+  if (!saved.ok) return saved;
   return { ok: true, notice: 'updated' };
 }
 
-function deleteDeposit(id) {
+async function deleteDeposit(id) {
   if (!depositRepository.findById(id)) return { ok: false, error: 'notfound' };
   if (isTargetInUse('deposit', id)) return { ok: false, error: 'asset-in-use' };
-  depositRepository.remove(id);
+  const saved = await persist(() => depositRepository.remove(id));
+  if (!saved.ok) return saved;
   return { ok: true, notice: 'deleted' };
 }
 
-function createSavings(body) {
+async function createSavings(body) {
   const parsed = parseSavings(body);
   if (!parsed) return { ok: false, error: 'invalid' };
-  saveNew(savingsRepository, 'sav', parsed);
+  const saved = await persist(() => saveNew(savingsRepository, parsed));
+  if (!saved.ok) return saved;
   return { ok: true, notice: 'created' };
 }
 
-function updateSavings(id, body) {
+async function updateSavings(id, body) {
   const current = savingsRepository.findById(id);
   if (!current) return { ok: false, error: 'notfound' };
   const parsed = parseSavings(body, current);
   if (!parsed) return { ok: false, error: 'invalid' };
-  Object.assign(current, parsed);
+  const saved = await persist(() => updateExisting(savingsRepository, id, parsed));
+  if (!saved.ok) return saved;
   return { ok: true, notice: 'updated' };
 }
 
-function deleteSavings(id) {
+async function deleteSavings(id) {
   if (!savingsRepository.findById(id)) return { ok: false, error: 'notfound' };
   if (isTargetInUse('savings', id)) return { ok: false, error: 'asset-in-use' };
-  savingsRepository.remove(id);
+  const saved = await persist(() => savingsRepository.remove(id));
+  if (!saved.ok) return saved;
   return { ok: true, notice: 'deleted' };
 }
 
-function createStock(body) {
+async function createStock(body) {
   const parsed = parseStock(body);
   if (!parsed) return { ok: false, error: 'invalid' };
-  saveNew(stockRepository, 'stk', parsed);
+  const saved = await persist(() => saveNew(stockRepository, parsed));
+  if (!saved.ok) return saved;
   return { ok: true, notice: 'created' };
 }
 
-function updateStock(id, body) {
+async function updateStock(id, body) {
   const current = stockRepository.findById(id);
   if (!current) return { ok: false, error: 'notfound' };
   const parsed = parseStock(body, current);
   if (!parsed) return { ok: false, error: 'invalid' };
-  Object.assign(current, parsed);
+  const saved = await persist(() => updateExisting(stockRepository, id, parsed));
+  if (!saved.ok) return saved;
   return { ok: true, notice: 'updated' };
 }
 
-function deleteStock(id) {
+async function deleteStock(id) {
   if (!stockRepository.findById(id)) return { ok: false, error: 'notfound' };
   if (isTargetInUse('stock', id)) return { ok: false, error: 'asset-in-use' };
-  stockRepository.remove(id);
+  const saved = await persist(() => stockRepository.remove(id));
+  if (!saved.ok) return saved;
   return { ok: true, notice: 'deleted' };
 }
 
-function createCard(body) {
+async function createCard(body) {
   const parsed = parseCard(body);
   if (!parsed) return { ok: false, error: 'invalid' };
-  saveNew(cardRepository, 'card', parsed);
+  const saved = await persist(() => saveNew(cardRepository, parsed));
+  if (!saved.ok) return saved;
   return { ok: true, notice: 'created' };
 }
 
-function updateCard(id, body) {
+async function updateCard(id, body) {
   const parsed = parseCard(body);
   if (!parsed) return { ok: false, error: 'invalid' };
-  if (!updateExisting(cardRepository, id, parsed)) return { ok: false, error: 'notfound' };
+  const saved = await persist(() => updateExisting(cardRepository, id, parsed));
+  if (!saved.ok) return saved;
+  if (!saved.value) return { ok: false, error: 'notfound' };
   return { ok: true, notice: 'updated' };
 }
 
-function deleteCard(id) {
+async function deleteCard(id) {
   if (!cardRepository.findById(id)) return { ok: false, error: 'notfound' };
   if (isCardInUse(id)) return { ok: false, error: 'card-in-use' };
-  cardRepository.remove(id);
+  const saved = await persist(() => cardRepository.remove(id));
+  if (!saved.ok) return saved;
   return { ok: true, notice: 'deleted' };
 }
 
@@ -511,7 +550,7 @@ function getAssetsPage({ tab, notice, error } = {}) {
       profitDirection: directionOf(investment - investmentCost),
       debtText: formatKRW(liabilities),
     },
-    fxLabel: `달러 주식은 1달러 = ${usdRate.toLocaleString('ko-KR')}원으로 환산합니다`,
+    fxLabel: usdRate ? `달러 주식은 1달러 = ${usdRate.toLocaleString('ko-KR')}원으로 환산합니다` : '',
     accounts,
     deposits,
     savings,

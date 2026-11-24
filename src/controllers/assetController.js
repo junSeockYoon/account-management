@@ -17,64 +17,64 @@ function show(req, res) {
   });
 }
 
-function createAccount(req, res) {
-  redirectTo(res, 'accounts', assetService.createAccount(req.body));
+async function createAccount(req, res) {
+  redirectTo(res, 'accounts', await assetService.createAccount(req.body));
 }
 
-function updateAccount(req, res) {
-  redirectTo(res, 'accounts', assetService.updateAccount(req.params.id, req.body));
+async function updateAccount(req, res) {
+  redirectTo(res, 'accounts', await assetService.updateAccount(req.params.id, req.body));
 }
 
-function deleteAccount(req, res) {
-  redirectTo(res, 'accounts', assetService.deleteAccount(req.params.id));
+async function deleteAccount(req, res) {
+  redirectTo(res, 'accounts', await assetService.deleteAccount(req.params.id));
 }
 
-function createDeposit(req, res) {
-  redirectTo(res, 'deposits', assetService.createDeposit(req.body));
+async function createDeposit(req, res) {
+  redirectTo(res, 'deposits', await assetService.createDeposit(req.body));
 }
 
-function updateDeposit(req, res) {
-  redirectTo(res, 'deposits', assetService.updateDeposit(req.params.id, req.body));
+async function updateDeposit(req, res) {
+  redirectTo(res, 'deposits', await assetService.updateDeposit(req.params.id, req.body));
 }
 
-function deleteDeposit(req, res) {
-  redirectTo(res, 'deposits', assetService.deleteDeposit(req.params.id));
+async function deleteDeposit(req, res) {
+  redirectTo(res, 'deposits', await assetService.deleteDeposit(req.params.id));
 }
 
-function createSavings(req, res) {
-  redirectTo(res, 'savings', assetService.createSavings(req.body));
+async function createSavings(req, res) {
+  redirectTo(res, 'savings', await assetService.createSavings(req.body));
 }
 
-function updateSavings(req, res) {
-  redirectTo(res, 'savings', assetService.updateSavings(req.params.id, req.body));
+async function updateSavings(req, res) {
+  redirectTo(res, 'savings', await assetService.updateSavings(req.params.id, req.body));
 }
 
-function deleteSavings(req, res) {
-  redirectTo(res, 'savings', assetService.deleteSavings(req.params.id));
+async function deleteSavings(req, res) {
+  redirectTo(res, 'savings', await assetService.deleteSavings(req.params.id));
 }
 
-function createStock(req, res) {
-  redirectTo(res, 'stocks', assetService.createStock(req.body));
+async function createStock(req, res) {
+  redirectTo(res, 'stocks', await assetService.createStock(req.body));
 }
 
-function updateStock(req, res) {
-  redirectTo(res, 'stocks', assetService.updateStock(req.params.id, req.body));
+async function updateStock(req, res) {
+  redirectTo(res, 'stocks', await assetService.updateStock(req.params.id, req.body));
 }
 
-function deleteStock(req, res) {
-  redirectTo(res, 'stocks', assetService.deleteStock(req.params.id));
+async function deleteStock(req, res) {
+  redirectTo(res, 'stocks', await assetService.deleteStock(req.params.id));
 }
 
-function createCard(req, res) {
-  redirectTo(res, 'cards', assetService.createCard(req.body));
+async function createCard(req, res) {
+  redirectTo(res, 'cards', await assetService.createCard(req.body));
 }
 
-function updateCard(req, res) {
-  redirectTo(res, 'cards', assetService.updateCard(req.params.id, req.body));
+async function updateCard(req, res) {
+  redirectTo(res, 'cards', await assetService.updateCard(req.params.id, req.body));
 }
 
-function deleteCard(req, res) {
-  redirectTo(res, 'cards', assetService.deleteCard(req.params.id));
+async function deleteCard(req, res) {
+  redirectTo(res, 'cards', await assetService.deleteCard(req.params.id));
 }
 
 module.exports = {

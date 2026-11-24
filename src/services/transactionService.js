@@ -4,7 +4,6 @@ const cardRepository = require('../repositories/cardRepository');
 const transactionRepository = require('../repositories/transactionRepository');
 const categoryRepository = require('../repositories/categoryRepository');
 const metaRepository = require('../repositories/metaRepository');
-const { createId } = require('../repositories/store');
 const form = require('../utils/form');
 const { formatKRW, formatSignedKRW, formatMonthDay } = require('../utils/format');
 
@@ -17,6 +16,7 @@ const NOTICES = {
 const ERRORS = {
   invalid: '입력값을 다시 확인해 주세요.',
   notfound: '거래를 찾지 못했습니다.',
+  nouser: 'Supabase에 가입한 사용자가 없어 저장할 수 없습니다.',
 };
 
 const TYPE_LABELS = { income: '수입', expense: '지출', transfer: '이체' };
@@ -386,21 +386,57 @@ function decorate(tx, index) {
   };
 }
 
-function create(body) {
+function writeFailure(err) {
+  if (err.code === 'NO_USER') return { ok: false, error: 'nouser' };
+  if (err.code === 'WRITE') return { ok: false, error: 'invalid' };
+  return null;
+}
+
+async function saveEffects(tx) {
+  const jobs = [];
+  const account = tx.accountId && accountRepository.findById(tx.accountId);
+  if (account) jobs.push(accountRepository.save(account));
+  if (tx.paymentMethod === 'card' && tx.cardId) {
+    const card = cardRepository.findById(tx.cardId);
+    if (card) {
+      jobs.push(cardRepository.save(card));
+      const linked = card.linkedAccountId && accountRepository.findById(card.linkedAccountId);
+      if (linked) jobs.push(accountRepository.save(linked));
+    }
+  }
+  if (tx.toAssetType === 'savings') {
+    const target = savingsRepository.findById(tx.toAssetId);
+    if (target) jobs.push(savingsRepository.save(target));
+  }
+  if (tx.toAssetType === 'account') {
+    const target = accountRepository.findById(tx.toAssetId);
+    if (target) jobs.push(accountRepository.save(target));
+  }
+  await Promise.all(jobs);
+}
+
+async function create(body) {
   const parsed = parse(body);
   if (!parsed) return fail('invalid', body);
-  const tx = { id: createId('tx'), ...parsed, balanceApplied: true };
+  const tx = { ...parsed, balanceApplied: true };
   if (!apply(tx, 1)) return fail('invalid', body);
-  transactionRepository.insert(tx);
+  try {
+    await transactionRepository.insert(tx);
+    await saveEffects(tx);
+  } catch (err) {
+    const failed = writeFailure(err);
+    if (failed) return { ...failed, month: tx.date.slice(0, 7) };
+    throw err;
+  }
   return ok('created', tx.date.slice(0, 7));
 }
 
-function update(id, body) {
+async function update(id, body) {
   const parsed = parse(body);
   if (!parsed) return fail('invalid', body);
   const tx = transactionRepository.findById(id);
   if (!tx) return fail('notfound', body);
-  // 시드 거래는 스냅샷에 이미 반영돼 있어 잔액을 다시 움직이지 않는다.
+  const previous = { ...tx };
   if (tx.balanceApplied) {
     apply(tx, -1);
     if (!apply({ ...tx, ...parsed }, 1)) {
@@ -409,15 +445,31 @@ function update(id, body) {
     }
   }
   Object.assign(tx, parsed);
+  try {
+    await transactionRepository.save(tx);
+    await saveEffects(previous);
+    await saveEffects(tx);
+  } catch (err) {
+    const failed = writeFailure(err);
+    if (failed) return { ...failed, month: tx.date.slice(0, 7) };
+    throw err;
+  }
   return ok('updated', tx.date.slice(0, 7));
 }
 
-function remove(id, body) {
+async function remove(id, body) {
   const tx = transactionRepository.findById(id);
   if (!tx) return fail('notfound', body);
   const month = tx.date.slice(0, 7);
   if (tx.balanceApplied) apply(tx, -1);
-  transactionRepository.remove(id);
+  try {
+    await transactionRepository.remove(id);
+    await saveEffects(tx);
+  } catch (err) {
+    const failed = writeFailure(err);
+    if (failed) return { ...failed, month };
+    throw err;
+  }
   return ok('deleted', month);
 }
 
