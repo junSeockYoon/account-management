@@ -1,4 +1,6 @@
--- 자산관리 스키마. Supabase SQL Editor에서 한 번에 실행한다.
+-- 자산관리 스키마. 빈 데이터베이스에서 한 번만 실행한다.
+-- 이미 만들어 둔 데이터베이스에서 다시 실행하면 account_kind already exists 로 멈춘다.
+-- 그 오류는 첫 줄에서 나므로 이번 실행은 반영되지 않는다. schema.sql 을 다시 붙이지 않는다.
 -- 계좌·카드·거래는 auth.users 한 명 소유다.
 -- 서비스 롤 키로 접속하면 RLS를 통과한다. 브라우저 키는 본인 행만 본다.
 -- 금액은 원화 bigint. 주식 가격·달러 환율만 numeric.
@@ -15,6 +17,7 @@ create table public.profiles (
   display_name text not null default '나',
   as_of date not null default current_date,
   usd_rate numeric(12, 4) not null default 1380.5 check (usd_rate > 0),
+  monthly_card_limit bigint check (monthly_card_limit is null or monthly_card_limit > 0),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -289,15 +292,16 @@ insert into public.categories (id, name, "group", color, sort_order) values
   ('living', '생활/마트', 'expense', '#14B8A6', 4),
   ('shopping', '쇼핑', 'expense', '#F59E0B', 5),
   ('leisure', '문화/여가', 'expense', '#EC4899', 6),
-  ('travel', '여행', 'expense', '#F97316', 7),
-  ('medical', '의료/건강', 'expense', '#10B981', 8),
-  ('telecom', '통신', 'expense', '#6366F1', 9),
-  ('housing', '주거/관리비', 'expense', '#64748B', 10),
-  ('subscription', '구독', 'expense', '#A855F7', 11),
-  ('insurance', '보험', 'expense', '#475569', 12),
-  ('ceremony', '경조사', 'expense', '#E11D48', 13),
-  ('education', '교육', 'expense', '#2563EB', 14),
-  ('salary', '급여', 'income', '#059669', 15),
-  ('interest', '이자', 'income', '#0D9488', 16),
-  ('other-income', '기타수입', 'income', '#34D399', 17),
-  ('transfer', '이체', 'transfer', '#94A3B8', 18);
+  ('date', '데이트', 'expense', '#DB2777', 7),
+  ('travel', '여행', 'expense', '#F97316', 8),
+  ('medical', '의료/건강', 'expense', '#10B981', 9),
+  ('telecom', '통신', 'expense', '#6366F1', 10),
+  ('housing', '주거/관리비', 'expense', '#64748B', 11),
+  ('subscription', '구독', 'expense', '#A855F7', 12),
+  ('insurance', '보험', 'expense', '#475569', 13),
+  ('ceremony', '경조사', 'expense', '#E11D48', 14),
+  ('education', '교육', 'expense', '#2563EB', 15),
+  ('salary', '급여', 'income', '#059669', 16),
+  ('interest', '이자', 'income', '#0D9488', 17),
+  ('other-income', '기타수입', 'income', '#34D399', 18),
+  ('transfer', '이체', 'transfer', '#94A3B8', 19);

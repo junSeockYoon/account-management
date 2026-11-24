@@ -248,10 +248,19 @@ async function rows(table, token, userId) {
   return (list || []).map((row) => tables[table].fromRow(row));
 }
 
+async function loadProfiles(token) {
+  try {
+    return await rest('profiles?select=id,display_name,as_of,usd_rate,monthly_card_limit', token);
+  } catch (err) {
+    if (err.code !== 'WRITE') throw err;
+    return rest('profiles?select=id,display_name,as_of,usd_rate', token);
+  }
+}
+
 async function fetchState(token) {
   const missing = configError();
   if (missing) throw missing;
-  const profiles = await rest('profiles?select=id,display_name,as_of,usd_rate', token);
+  const profiles = await loadProfiles(token);
   const profile = profiles && profiles[0];
   const userId = (profile && profile.id) || userIdFromToken(token);
   const [categories, accounts, deposits, savings, stocks, cards, transactions] = await Promise.all([
@@ -268,7 +277,10 @@ async function fetchState(token) {
     accessToken: token,
     userId,
     asOf: profile ? profile.as_of : todaySeoul(),
-    profile: { name: profile ? profile.display_name : '나' },
+    profile: {
+      name: profile ? profile.display_name : '나',
+      monthlyCardLimit: profile ? num(profile.monthly_card_limit) : null,
+    },
     fxRate: { base: 'KRW', USD: profile ? num(profile.usd_rate) : null },
     categories: (categories || []).map((row) => ({
       id: row.id,
@@ -303,8 +315,15 @@ async function updateProfileRate(userId, rate) {
   });
 }
 
+async function updateMonthlyCardLimit(userId, amount) {
+  await rest(`profiles?id=eq.${encodeURIComponent(userId)}`, null, {
+    method: 'PATCH',
+    body: { monthly_card_limit: amount },
+  });
+}
+
 async function remove(table, id) {
   await rest(`${table}?id=eq.${encodeURIComponent(id)}`, null, { method: 'DELETE' });
 }
 
-module.exports = { fetchState, insert, update, updateProfileRate, remove };
+module.exports = { fetchState, insert, update, updateProfileRate, updateMonthlyCardLimit, remove };

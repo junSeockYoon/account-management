@@ -18,6 +18,7 @@ router.post('/signup', guard(authController.signup));
 router.post('/logout', authController.logout);
 
 router.get('/', guard(dashboardController.home));
+router.post('/card-limit', guard(analyticsController.saveCardLimit));
 router.get('/transactions', guard(transactionController.show));
 router.post('/transactions', guard(transactionController.create));
 router.post('/transactions/:id/update', guard(transactionController.update));

@@ -1,4 +1,10 @@
 <%- include('partials/open') %>
+<% if (flash.error) { %>
+  <p class="mb-4 rounded-2xl bg-[#FFF1F1] px-4 py-3 text-[14px] font-medium text-[#F04452]" role="alert"><%= flash.error %></p>
+<% } %>
+<% if (flash.notice) { %>
+  <p class="mb-4 rounded-2xl bg-[#E8F8F3] px-4 py-3 text-[14px] font-medium text-[#087F5B]" role="status"><%= flash.notice %></p>
+<% } %>
 
 <section class="grid grid-cols-1 gap-3 sm:grid-cols-3" aria-label="이번 달 지출">
   <article class="rounded-[20px] border border-[#E5E8EB] bg-white px-5 py-4">
@@ -17,6 +23,8 @@
     <p class="mt-2 text-[12px] text-[#8B95A1] tabular-nums"><%= report.variable.shareText %></p>
   </article>
 </section>
+
+<%- include('partials/card-limit', { budget: report.cardLimit, next: 'analytics' }) %>
 
 <section class="mt-4 rounded-[20px] border border-[#E5E8EB] bg-white p-6">
   <h2 class="text-[17px] font-bold">6개월 지출</h2>

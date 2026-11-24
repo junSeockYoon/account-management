@@ -19,6 +19,7 @@ const {
   toShares,
 } = require('../utils/format');
 const { stockValueKRW } = require('../utils/assetMath');
+const cardLimit = require('./cardLimit');
 
 function sumBy(items, pick) {
   return items.reduce((total, item) => total + pick(item), 0);
@@ -185,6 +186,7 @@ function getDashboard() {
     portfolio: buildPortfolio(cash, safe, investment),
     topCategories: buildTopCategories(transactions, categories, periodStart, periodEnd, monthExpense),
     maturities: buildMaturities(deposits, savings, asOf),
+    cardLimit: cardLimit.present(transactions, asOf, metaRepository.getProfile().monthlyCardLimit),
     fxLabel: usdRate ? `달러 주식은 1달러 = ${usdRate.toLocaleString('ko-KR')}원으로 환산했습니다` : '',
   };
 }

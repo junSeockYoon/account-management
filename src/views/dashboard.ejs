@@ -1,4 +1,10 @@
 <%- include('partials/open') %>
+<% if (flash.error) { %>
+  <p class="mb-4 rounded-2xl bg-[#FFF1F1] px-4 py-3 text-[14px] font-medium text-[#F04452]" role="alert"><%= flash.error %></p>
+<% } %>
+<% if (flash.notice) { %>
+  <p class="mb-4 rounded-2xl bg-[#E8F8F3] px-4 py-3 text-[14px] font-medium text-[#087F5B]" role="status"><%= flash.notice %></p>
+<% } %>
 <% const deltaClass = dashboard.expenseDelta.direction === 'up'
   ? 'text-[#F04452]'
   : dashboard.expenseDelta.direction === 'down'
@@ -27,6 +33,8 @@
     </p>
   </article>
 </section>
+
+<%- include('partials/card-limit', { budget: dashboard.cardLimit, next: 'home' }) %>
 
 <section class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-5">
   <article class="rounded-[20px] border border-[#E5E8EB] bg-white p-6 lg:col-span-3">
