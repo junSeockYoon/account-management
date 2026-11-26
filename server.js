@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const navItems = require('./src/config/nav');
 const { loadState, runWithState, getState } = require('./src/repositories/store');
+const db = require('./src/repositories/db');
 const recurringService = require('./src/services/recurringService');
 const { ensureAccess } = require('./src/auth/session');
 const { formatKoreanDate, safeJson } = require('./src/utils/format');
@@ -30,6 +31,7 @@ app.use((req, res, next) => {
         return;
       }
       return loadState(token).then((state) => runWithState(state, async () => {
+          await db.syncAsOf(state);
           await recurringService.materialize();
           res.locals.profile = state.profile;
           res.locals.recurringNotice = getState().recurringNotice || '';

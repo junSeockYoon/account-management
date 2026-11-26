@@ -417,6 +417,29 @@ async function update(table, item) {
   await rest(`${table}?id=eq.${encodeURIComponent(item.id)}`, null, { method: 'PATCH', body: fields });
 }
 
+function dateOnly(value) {
+  const text = String(value || '').slice(0, 10);
+  return /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : '';
+}
+
+async function syncAsOf(state) {
+  const today = todaySeoul();
+  if (dateOnly(state.asOf) === today) {
+    state.asOf = today;
+    return;
+  }
+  state.asOf = today;
+  if (!state.userId) return;
+  try {
+    await rest(`profiles?id=eq.${encodeURIComponent(state.userId)}`, state.accessToken, {
+      method: 'PATCH',
+      body: { as_of: today },
+    });
+  } catch (err) {
+    if (err.code !== 'WRITE') throw err;
+  }
+}
+
 async function updateProfileRate(userId, rate) {
   await rest(`profiles?id=eq.${encodeURIComponent(userId)}`, null, {
     method: 'PATCH',
@@ -465,6 +488,7 @@ module.exports = {
   fetchState,
   insert,
   update,
+  syncAsOf,
   updateProfileRate,
   updateMonthlyCardLimit,
   updateSpendingTarget,
